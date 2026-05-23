@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- SEO Best Practices -->
+  <title>วิทยาลัยเทคนิคตาก - ระบบสอบออนไลน์</title>
+  <meta name="description"
+    content="ระบบสอบออนไลน์ครบวงจรสำหรับคุณครู นักเรียน และผู้ดูแลระบบ พร้อมระบบตรวจจับและป้องกันการทุจริตแบบเรียลไทม์ และระบบรายงานวิเคราะห์คะแนนอัจฉริยะ">
+  <meta name="keywords"
+    content="สอบออนไลน์, ระบบจับเวลา, ตรวจจับสลับจอ, ป้องกันทุจริต, การสอบ, ครู, นักเรียน, แอดมิน, รายงานผลคะแนน">
+
+  <!-- Mobile App / PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="สอบออนไลน์">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dark-theme" id="app-body">
+
+  <!-- AUIDO WARNING FOR ANTI-CHEAT (Beep Sound via Web Audio API, handled in app.js) -->
+
+  <!-- ========================================== -->
+  <!-- 1. หน้าจอลงทะเบียนและเข้าสู่ระบบ (AUTH CONTAINER) -->
+  <!-- ========================================== -->
+  <div id="auth-container" class="auth-wrapper">
+    <main class="auth-card glass-panel" id="auth-card-panel">
+      <div class="auth-header">
+        <img src="logo.png" alt="Logo" style="width: 64px; height: 64px; object-fit: contain; margin-bottom: 12px; border-radius: 50%;">
+        <h1 class="text-gradient">วิทยาลัยเทคนิคตาก</h1>
+        <p id="auth-subtitle">ระบบบริหารจัดการและจัดสอบออนไลน์อัจฉริยะ</p>
+      </div>
+
+      <!-- ส่วนเลือกระหว่าง Login และ Register -->
+      <div class="role-selector" id="auth-mode-selector" style="display: none;">
+        <!-- จะสับเปลี่ยนปุ่มผ่าน JS -->
+      </div>
+
+      <!-- แท็บเลือกบทบาทสำหรับสมัครสมาชิก -->
+      <div class="form-group" id="reg-role-group" style="display: none;">
+        <label class="form-label">กรุณาเลือกบทบาทของคุณ</label>
+        <div class="role-selector" style="grid-template-columns: repeat(2, 1fr);">
+          <button type="button" class="role-option active" data-role="student" id="role-btn-student">
+            <i class="lucide-icon" data-lucide="graduation-cap"></i>
+            <span>นักเรียน</span>
+          </button>
+          <button type="button" class="role-option" data-role="teacher" id="role-btn-teacher">
+            <i class="lucide-icon" data-lucide="book-open"></i>
+            <span>คุณครู</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ฟอร์มกรอกข้อมูล -->
+      <form id="auth-form" novalidate>
+        <div class="form-group" id="reg-name-group" style="display: none;">
+          <label for="auth-name" class="form-label">ชื่อ-นามสกุลจริง</label>
+          <input type="text" id="auth-name" class="form-control" placeholder="เช่น นายสมชาย ใจดี" required>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-username" class="form-label">ชื่อผู้ใช้งาน (Username)</label>
+          <input type="text" id="auth-username" class="form-control" placeholder="กรอกชื่อผู้ใช้งาน" required
+            autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="auth-password" class="form-label">รหัสผ่าน (Password)</label>
+          <input type="password" id="auth-password" class="form-control" placeholder="กรอกรหัสผ่าน" required
+            autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" id="auth-submit-btn">
+          <i class="lucide-icon" data-lucide="log-in"></i>
+          <span id="auth-submit-text">เข้าสู่ระบบ</span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span id="auth-footer-desc">ยังไม่มีบัญชีผู้ใช้งานใช่หรือไม่?</span>
+        <a href="#" id="auth-toggle-link">สมัครสมาชิกที่นี่</a>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. แครงสร้างหลักของระบบหลังล็อกอิน (APP SHELL CONTAINER) -->
+  <!-- ========================================== -->
+  <div id="app-shell" style="display: none; flex-direction: column; min-height: 100vh;">
+    <!-- ส่วนหัว (Header Navigation) -->
+    <header>
+      <div class="logo-container" id="logo-home-trigger">
+        <img src="logo.png" alt="Logo" style="width: 28px; height: 28px; object-fit: contain; border-radius: 50%;">
+        <span class="text-gradient" style="font-weight: 800; font-size: 20px;">วิทยาลัยเทคนิคตาก</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- ปุ่มปรับเปลี่ยนธีม -->
+        <button id="theme-toggle-btn" class="theme-toggle" title="เปลี่ยนธีมหน้าจอ" aria-label="Toggle Theme">
+          <i class="lucide-icon" data-lucide="palette" id="theme-icon"></i>
+        </button>
+
+        <!-- ข้อมูลโปรไฟล์ผู้ใช้แบบย่อ -->
+        <div class="user-badge" id="header-user-badge">
+          <span id="user-badge-name">ดาวน์โหลด...</span>
+          <span class="badge-role role-student" id="user-badge-role">นักเรียน</span>
+        </div>
+
+        <!-- ปุ่มออกจากระบบ -->
+        <button class="btn btn-secondary" id="logout-btn" style="padding: 8px 12px;" title="ออกจากระบบ">
+          <i class="lucide-icon" data-lucide="log-out"></i>
+          <span>ออก</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- แผงควบคุมแบ่งสัดส่วน (Dashboard Container) -->
+    <div class="dashboard-container">
+      <!-- แผงข้างนำทาง (Sidebar Navigation) -->
+      <aside class="sidebar" id="app-sidebar">
+        <!-- เมนูจะเปลี่ยนไปตามบทบาทของผู้ใช้งานที่ประมวลผลผ่าน JS -->
+        <div id="sidebar-menu-items" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- แทรกข้อมูลผ่าน JS -->
+        </div>
+
+        <!-- ท้ายแผงข้าง -->
+        <div class="sidebar-footer">
+          <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
+            <p>ระบบสอบออนไลน์ v1.0</p>
+            <p style="margin-top: 4px;">© 2026 โครงการศึกษาพิเศษ</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- พื้นที่การแสดงผลหน้าเพจย่อย (Main Content View) -->
+      <main class="main-content" id="main-content-view">
+        <!-- แทรกหน้าย่อย (Dashboard, Subjects, Logs, Reports) ผ่าน JS -->
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. หน้าจอการเข้าสอบออนไลน์อย่างเป็นทางการ (EXAM TAKING SCREEN) -->
+  <!-- ========================================== -->
+  <div id="exam-taking-container" class="exam-engine-layout" style="display: none;">
+    <!-- แผงข้างบอกข้อมูลและนำทางข้อสอบ -->
+    <aside class="exam-sidebar">
+      <div class="exam-info-header">
+        <span class="badge-role role-student"
+          style="font-size: 11px; margin-bottom: 8px; display: inline-block;">กำลังทำข้อสอบ</span>
+        <h2 id="exam-title-display">กำลังโหลดวิชา...</h2>
+        <p id="exam-desc-display"
+          style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">คำอธิบายข้อสอบ</p>
+      </div>
+
+      <!-- วิดเจ็ตนับเวลาถอยหลัง (Timer) -->
+      <div class="exam-timer-widget" id="exam-timer-display" title="เวลาสอบคงเหลือ">
+        <i class="lucide-icon" data-lucide="clock"></i>
+        <span id="timer-nums">00:00:00</span>
+      </div>
+
+      <!-- แผงรายชื่อคำถาม -->
+      <div class="questions-nav-panel">
+        <h3>ข้อสอบทั้งหมด</h3>
+        <div class="questions-nav-grid" id="questions-navigation-grid">
+          <!-- ปุ่มนำทางข้อ 1, 2, 3... จะเติมผ่าน JS -->
+        </div>
+      </div>
+
+      <!-- ปุ่มส่งข้อสอบด่วนหรือตรวจความเรียบร้อย -->
+      <div class="exam-sidebar-footer">
+        <button class="btn btn-danger" id="exam-submit-trigger" style="width: 100%; padding: 12px;">
+          <i class="lucide-icon" data-lucide="send"></i>
+          <span>ส่งกระดาษคำตอบ</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- พื้นที่ทำข้อสอบ (คำถาม & ตัวเลือก) -->
+    <section class="exam-main-panel">
+      <!-- บาร์แสดงสถิติการโกงและสถานะ -->
+      <div class="exam-status-bar">
+        <div style="display: flex; gap: 20px;">
+          <span>นักเรียน: <strong id="exam-student-name">...</strong></span>
+          <span>ข้อสอบทั้งหมด: <strong id="exam-total-questions">0</strong> ข้อ</span>
+        </div>
+        <!-- การเตือนจับสลับหน้าต่าง -->
+        <div class="cheat-indicator" id="exam-cheat-indicator">
+          <i class="lucide-icon" data-lucide="shield-alert"></i>
+          <span>ออกนอกหน้าจอ: <strong id="exam-cheat-count">0</strong> / 2 ครั้ง</span>
+        </div>
+      </div>
+
+      <!-- ตัวกระดาษคำถามคำตอบ -->
+      <div class="exam-question-body">
+        <div class="question-content-container" id="current-question-box">
+          <!-- จะเติมเนื้อหาคำถามตัวเลือกจาก JS -->
+        </div>
+      </div>
+
+      <!-- ปุ่มควบคุมล่างการทำข้อสอบ -->
+      <div class="exam-actions-panel">
+        <button class="btn btn-secondary" id="exam-prev-btn">
+          <i class="lucide-icon" data-lucide="chevron-left"></i>
+          <span>ข้อก่อนหน้า</span>
+        </button>
+        <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">
+          คำถามข้อที่ <span id="exam-current-index-num">1</span> จาก <span id="exam-total-index-num">1</span>
+        </div>
+        <button class="btn btn-primary" id="exam-next-btn">
+          <span>ข้อถัดไป</span>
+          <i class="lucide-icon" data-lucide="chevron-right"></i>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. ระบบป้องกันการทุจริต - บอร์ดเตือนภัยการสลับจอ (ANTI-CHEAT WARN OVERLAY) -->
+  <!-- ========================================== -->
+  <div id="anti-cheat-warning-overlay" class="anti-cheat-overlay" style="display: none;">
+    <div class="overlay-card glass-panel">
+      <i class="lucide-icon overlay-icon" data-lucide="alert-triangle"></i>
+      <h2>ตรวจพบการละเมิดกฎการสอบ!</h2>
+      <p>
+        คุณกำลังสลับแท็บ เปิดแอปพลิเคชันอื่น หรือลดขนาดบราวเซอร์ลง!
+        การเข้าทำข้อสอบถูกบังคับให้อยู่ในโหมดจับตาเต็มหน้าจอ (Fullscreen) ตลอดเวลา
+      </p>
+      <div class="glass-panel" style="padding: 16px; margin-bottom: 24px; border-color: rgba(244, 63, 94, 0.2);">
+        <p style="margin-bottom: 0; font-weight: 600; font-size: 15px;">
+          คุณละเมิดกฎไปแล้ว: <span id="anti-cheat-warn-count"
+            style="color: var(--danger); font-size: 20px; font-weight: 800;">1</span> / 2 ครั้ง
+        </p>
+        <p style="margin-bottom: 0; font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+          ** หากออกนอกหน้าจอเป็นครั้งที่ 3 ระบบจะทำการส่งกระดาษคำตอบของคุณโดยอัตโนมัติทันที **
+        </p>
+      </div>
+      <button class="btn btn-danger" id="resume-exam-btn" style="width: 100%; padding: 12px;">
+        <i class="lucide-icon" data-lucide="fullscreen"></i>
+        <span>ยอมรับกฎและกลับเข้าสอบ (เข้าเต็มจอ)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- บอร์ดแจ้งเตือนทุจริตจนส่งข้อสอบทันที (ANTI-CHEAT TERMINATED OVERLAY) -->
+  <div id="anti-cheat-terminated-overlay" class="anti-cheat-overlay" style="display: none;">
+    <div class="overlay-card glass-panel" style="border-color: var(--danger);">
+      <i class="lucide-icon overlay-icon" data-lucide="user-x"></i>
+      <h2 style="font-size: 24px;">การสอบของคุณถูกระงับทันที!</h2>
+      <p style="font-size: 15px;">
+        เนื่องจากตรวจพบว่าคุณทำการออกนอกหน้าจอสอบเกินกำหนด **3 ครั้ง**
+        ระบบความปลอดภัยจึงทำการยกเลิกสิทธิ์และ **ส่งกระดาษคำตอบอัตโนมัติทันที**
+      </p>
+      <div
+        style="background-color: rgba(244, 63, 94, 0.1); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 24px; text-align: left; font-size: 13px;">
+        <strong style="color: var(--danger);">รายละเอียดบันทึก:</strong>
+        <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-secondary); line-height: 1.6;">
+          <li>สืบพบการสลับแท็บ/หน้าจอบ่อยครั้ง</li>
+          <li>ระบบปิดกระดาษคำถามและส่งผลคะแนนเท่าที่ทำเสร็จแล้ว</li>
+          <li>แจ้งพฤติกรรมนี้ไปยังระบบฐานข้อมูลและแดชบอร์ดคุณครูเรียบร้อย</li>
+        </ul>
+      </div>
+      <button class="btn btn-secondary" id="exit-cheated-exam-btn" style="width: 100%; padding: 12px;">
+        <span>กลับไปยังหน้าแดชบอร์ด</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 5. กล่องข้อความแจ้งเตือนป๊อปอัปสากล (GLOBAL MODAL DIALOG) -->
+  <!-- ========================================== -->
+  <div id="global-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" id="modal-container-panel">
+      <div class="modal-header">
+        <h3 id="modal-title-text">หัวข้อประกาศ</h3>
+        <button class="close-modal-btn" id="modal-close-trigger" aria-label="Close dialog">
+          <i class="lucide-icon" data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="modal-body-content">
+        <!-- เนื้อหาป๊อปอัปจะแสดงผลและสับเปลี่ยนผ่าน JS -->
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. หน้าต่างเลือกธีมสี (THEME PICKER MODAL) -->
+  <!-- ========================================== -->
+  <div id="theme-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal-content glass-panel" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>เลือกธีมที่คุณชอบ</h3>
+        <button class="close-modal-btn" id="close-theme-modal-btn" aria-label="Close dialog">
+          <i class="lucide-icon" data-lucide="x"></i>
+        </button>
+      </div>
+      <div>
+        <p style="font-size: 13px; color: var(--text-secondary);">เปลี่ยนสีสันของแอปพลิเคชันตามสไตล์ของคุณ</p>
+        <div class="theme-options-grid" id="theme-options-container">
+          <!-- Dark Theme -->
+          <div class="theme-option-card active" data-theme="dark-theme">
+            <div class="theme-color-preview" style="background: linear-gradient(135deg, #0b0f19 50%, #6366f1 50%);"></div>
+            <span>Dark Mode</span>
+          </div>
+          <!-- Light Theme -->
+          <div class="theme-option-card" data-theme="light-theme">
+            <div class="theme-color-preview" style="background: linear-gradient(135deg, #f8fafc 50%, #4f46e5 50%); border-color: #cbd5e1;"></div>
+            <span>Light Mode</span>
+          </div>
+          <!-- Ocean Theme -->
+          <div class="theme-option-card" data-theme="ocean-theme">
+            <div class="theme-color-preview" style="background: linear-gradient(135deg, #041424 50%, #0ea5e9 50%);"></div>
+            <span>Ocean</span>
+          </div>
+          <!-- Forest Theme -->
+          <div class="theme-option-card" data-theme="forest-theme">
+            <div class="theme-color-preview" style="background: linear-gradient(135deg, #061c13 50%, #10b981 50%);"></div>
+            <span>Forest</span>
+          </div>
+          <!-- Sunset Theme -->
+          <div class="theme-option-card" data-theme="sunset-theme">
+            <div class="theme-color-preview" style="background: linear-gradient(135deg, #1f0f0c 50%, #f97316 50%);"></div>
+            <span>Sunset</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 6. สคริปต์การโหลดฐานข้อมูลและโค้ดควบคุมระบบ -->
+  <!-- ========================================== -->
+  <script src="database.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Service Worker Registration for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+      });
+    }
+  </script>
+</body>
+
+</html>
