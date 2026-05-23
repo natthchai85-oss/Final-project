@@ -1,4 +1,4 @@
-﻿// app.js - หัวใจหลักของระบบบริหารจัดการสอบออนไลน์ (SPA Logic Engine)
+// app.js - หัวใจหลักของระบบบริหารจัดการสอบออนไลน์ (SPA Logic Engine)
 
 // -------------------------------------------------------------
 // 1. สถานะแอปพลิเคชันหลัก (Application State)
@@ -203,7 +203,7 @@ function showAuthScreen() {
   document.getElementById('app-body').classList.remove('in-exam');
 }
 
-function showAppShell() {
+async function showAppShell() {
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('app-shell').style.display = 'flex';
   document.getElementById('exam-taking-container').style.display = 'none';
@@ -325,7 +325,7 @@ async function renderSidebarMenu() {
   });
 }
 
-async function await switchView(viewName) {
+async function switchView(viewName) {
   currentView = viewName;
   const contentArea = document.getElementById('main-content-view');
   
