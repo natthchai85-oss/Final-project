@@ -165,33 +165,42 @@ function bindAuthEvents() {
         alert(err.message);
       }
     } else {
-      if (!name) {
-        alert('กรุณากรอกชื่อ-นามสกุลจริง');
-        return;
-      }
-      
-      const role = document.querySelector('#reg-role-group .role-option.active').getAttribute('data-role');
-      
-      // ตรวจชื่อผู้ใช้ซ้ำ
-      const users = await window.db.getUsers();
-      const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
-      if (exists) {
-        alert('ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว กรุณาเลือกชื่ออื่น');
-        return;
-      }
+      try {
+        if (!name) {
+          alert('กรุณากรอกชื่อ-นามสกุลจริง');
+          return;
+        }
+        
+        const roleElement = document.querySelector('#reg-role-group .role-option.active');
+        if (!roleElement) {
+          alert('กรุณาเลือกบทบาท');
+          return;
+        }
+        const role = roleElement.getAttribute('data-role');
+        
+        // ตรวจชื่อผู้ใช้ซ้ำ
+        const users = await window.db.getUsers();
+        const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+        if (exists) {
+          alert('ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว กรุณาเลือกชื่ออื่น');
+          return;
+        }
 
-      const newUser = await window.db.addUser({
-        username,
-        password,
-        name,
-        role
-      });
+        const newUser = await window.db.addUser({
+          username,
+          password,
+          name,
+          role
+        });
 
-      alert('สมัครสมาชิกเรียบร้อยแล้ว! ระบบกำลังนำท่านเข้าสู่ระบบ');
-      currentUser = newUser;
-      sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-      showAppShell();
-      form.reset();
+        alert('สมัครสมาชิกเรียบร้อยแล้ว! ระบบกำลังนำท่านเข้าสู่ระบบ');
+        currentUser = newUser;
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        showAppShell();
+        form.reset();
+      } catch (err) {
+        alert('เกิดข้อผิดพลาด: ' + err.message);
+      }
     }
   });
 }
