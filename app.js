@@ -1,4 +1,4 @@
-// app.js - หัวใจหลักของระบบบริหารจัดการสอบออนไลน์ (SPA Logic Engine)
+﻿// app.js - หัวใจหลักของระบบบริหารจัดการสอบออนไลน์ (SPA Logic Engine)
 
 // -------------------------------------------------------------
 // 1. สถานะแอปพลิเคชันหลัก (Application State)
@@ -137,7 +137,7 @@ function bindAuthEvents() {
   });
 
   // ส่งข้อมูลฟอร์ม
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value;
@@ -150,11 +150,11 @@ function bindAuthEvents() {
 
     if (authMode === 'login') {
       try {
-        const user = window.db.authenticate(username, password);
+        const user = await window.db.authenticate(username, password);
         if (user) {
           currentUser = user;
           sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-          window.db.addLog(user.id, user.name, user.role, 'เข้าระบบ', 'เข้าสู่ระบบสำเร็จ');
+          await window.db.addLog(user.id, user.name, user.role, 'เข้าระบบ', 'เข้าสู่ระบบสำเร็จ');
           showAppShell();
           // รีเซ็ตฟอร์ม
           form.reset();
@@ -173,13 +173,14 @@ function bindAuthEvents() {
       const role = document.querySelector('#reg-role-group .role-option.active').getAttribute('data-role');
       
       // ตรวจชื่อผู้ใช้ซ้ำ
-      const exists = window.db.getUsers().some(u => u.username.toLowerCase() === username.toLowerCase());
+      const users = await window.db.getUsers();
+      const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
       if (exists) {
         alert('ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว กรุณาเลือกชื่ออื่น');
         return;
       }
 
-      const newUser = window.db.addUser({
+      const newUser = await window.db.addUser({
         username,
         password,
         name,
@@ -216,14 +217,14 @@ function showAppShell() {
 
   // โหลดเมนูข้างและหน้าแรกตามบทบาท
   renderSidebarMenu();
-  switchView('dashboard');
+  await switchView('dashboard');
 }
 
 function bindShellEvents() {
   // ปุ่มออกจากระบบ
-  document.getElementById('logout-btn').addEventListener('click', () => {
+  document.getElementById('logout-btn').addEventListener('click', async () => {
     if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
-      window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ออกจากระบบ', 'ออกจากระบบสำเร็จ');
+      await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ออกจากระบบ', 'ออกจากระบบสำเร็จ');
       currentUser = null;
       sessionStorage.removeItem('currentUser');
       showAuthScreen();
@@ -231,15 +232,15 @@ function bindShellEvents() {
   });
 
   // โลโก้คลิกแล้วกลับหน้า Dashboard
-  document.getElementById('logo-home-trigger').addEventListener('click', () => {
-    switchView('dashboard');
+  document.getElementById('logo-home-trigger').addEventListener('click', async () => {
+    await switchView('dashboard');
   });
 }
 
 // -------------------------------------------------------------
 // 4. การจัดการแผงเมนูและจัดเส้นทางการแสดงผล (Routing Views)
 // -------------------------------------------------------------
-function renderSidebarMenu() {
+async function renderSidebarMenu() {
   const menuBox = document.getElementById('sidebar-menu-items');
   let html = '';
 
@@ -316,15 +317,15 @@ function renderSidebarMenu() {
   // ผูกเหตุการณ์คลิกลิงก์
   const links = menuBox.querySelectorAll('.sidebar-link');
   links.forEach(link => {
-    link.addEventListener('click', () => {
+    link.addEventListener('click', async () => {
       links.forEach(l => l.classList.remove('active'));
       link.classList.add('active');
-      switchView(link.getAttribute('data-view'));
+      await switchView(link.getAttribute('data-view'));
     });
   });
 }
 
-function switchView(viewName) {
+async function await switchView(viewName) {
   currentView = viewName;
   const contentArea = document.getElementById('main-content-view');
   
@@ -341,46 +342,46 @@ function switchView(viewName) {
   // ควบคุมการแสดงผลตาม View
   switch (viewName) {
     case 'dashboard':
-      renderDashboard(contentArea);
+      await renderDashboard(contentArea);
       break;
     
     // บทบาทนักเรียน
     case 'student_subjects':
-      renderStudentSubjects(contentArea);
+      await renderStudentSubjects(contentArea);
       break;
     case 'student_exams':
-      renderStudentExams(contentArea);
+      await renderStudentExams(contentArea);
       break;
     case 'student_history':
-      renderStudentHistory(contentArea);
+      await renderStudentHistory(contentArea);
       break;
       
     // บทบาทคุณครู
     case 'teacher_subjects':
-      renderTeacherSubjects(contentArea);
+      await renderTeacherSubjects(contentArea);
       break;
     case 'teacher_exams':
-      renderTeacherExams(contentArea);
+      await renderTeacherExams(contentArea);
       break;
     case 'teacher_grading':
-      renderTeacherGrading(contentArea);
+      await renderTeacherGrading(contentArea);
       break;
     case 'teacher_reports':
-      renderTeacherReports(contentArea);
+      await renderTeacherReports(contentArea);
       break;
 
     // บทบาทผู้ดูแลระบบ
     case 'admin_users':
-      renderAdminUsers(contentArea);
+      await renderAdminUsers(contentArea);
       break;
     case 'admin_subjects':
-      renderAdminSubjects(contentArea);
+      await renderAdminSubjects(contentArea);
       break;
     case 'admin_logs':
-      renderAdminLogs(contentArea);
+      await renderAdminLogs(contentArea);
       break;
     case 'admin_backup':
-      renderAdminBackup(contentArea);
+      await renderAdminBackup(contentArea);
       break;
 
     default:
@@ -392,13 +393,13 @@ function switchView(viewName) {
 // -------------------------------------------------------------
 // 5. การเรนเดอร์เนื้อหาหน้า Dashboard ย่อย
 // -------------------------------------------------------------
-function renderDashboard(container) {
+async function renderDashboard(container) {
   if (currentUser.role === 'student') {
-    const enrolls = window.db.getStudentSubjects(currentUser.id);
-    const attempts = window.db.getAttemptsByStudent(currentUser.id);
+    const enrolls = await window.db.getStudentSubjects(currentUser.id);
+    const attempts = await window.db.getAttemptsByStudent(currentUser.id);
     
     // ค้นหาข้อสอบที่รอนักเรียนทำ
-    const exams = window.db.getExams();
+    const exams = await window.db.getExams();
     const pendingExams = exams.filter(ex => 
       enrolls.some(sub => sub.id === ex.subjectId) && 
       !attempts.some(att => att.examId === ex.id) &&
@@ -462,12 +463,12 @@ function renderDashboard(container) {
     document.getElementById('dash-enroll-trigger').addEventListener('click', openEnrollmentModal);
 
   } else if (currentUser.role === 'teacher') {
-    const teacherSubjects = window.db.getSubjectsByTeacher(currentUser.id);
-    const exams = window.db.getExams();
+    const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
+    const exams = await window.db.getExams();
     const teacherExams = exams.filter(ex => teacherSubjects.some(s => s.id === ex.subjectId));
     
     // ค้นหานักเรียนในความดูแล (ไม่ซ้ำ)
-    const enrollments = window.db.getEnrollments();
+    const enrollments = await window.db.getEnrollments();
     const studentsSet = new Set();
     enrollments.forEach(en => {
       if (teacherSubjects.some(s => s.id === en.subjectId)) {
@@ -475,7 +476,7 @@ function renderDashboard(container) {
       }
     });
     
-    const attempts = window.db.getAttempts();
+    const attempts = await window.db.getAttempts();
     const submissions = attempts.filter(att => teacherExams.some(ex => ex.id === att.examId));
 
     container.innerHTML = `
@@ -539,10 +540,10 @@ function renderDashboard(container) {
     `;
 
   } else if (currentUser.role === 'admin') {
-    const totalUsers = window.db.getUsers().length;
-    const totalSubjects = window.db.getSubjects().length;
-    const totalExams = window.db.getExams().length;
-    const totalLogs = window.db.getLogs().length;
+    const totalUsers = (await window.db.getUsers()).length;
+    const totalSubjects = (await window.db.getSubjects()).length;
+    const totalExams = (await window.db.getExams()).length;
+    const totalLogs = (await window.db.getLogs()).length;
 
     container.innerHTML = `
       <div class="view-title-container">
@@ -609,8 +610,8 @@ function renderDashboard(container) {
 // -------------------------------------------------------------
 // 6. หมวดหมู่นักเรียน - วิชาเรียนของฉัน (Student Subjects Page)
 // -------------------------------------------------------------
-function renderStudentSubjects(container) {
-  const enrolls = window.db.getStudentSubjects(currentUser.id);
+async function renderStudentSubjects(container) {
+  const enrolls = await window.db.getStudentSubjects(currentUser.id);
 
   let html = `
     <div class="view-title-container">
@@ -633,8 +634,8 @@ function renderStudentSubjects(container) {
   } else {
     html += `<div class="cards-grid">`;
     enrolls.forEach(sub => {
-      const teacher = window.db.getUser(sub.teacherId);
-      const examsCount = window.db.getExamsBySubject(sub.id).length;
+      const teacher = await window.db.getUser(sub.teacherId);
+      const examsCount = (await window.db.getExamsBySubject(sub.id)).length;
       html += `
         <article class="item-card glass-panel">
           <div class="item-card-header">
@@ -679,24 +680,24 @@ function openEnrollmentModal() {
   const form = document.getElementById('enrollment-modal-form');
   document.getElementById('enroll-cancel-btn').addEventListener('click', closeModal);
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = document.getElementById('enroll-subject-code').value.trim().toUpperCase();
     if (!code) return;
 
     // ค้นหาวิชานั้นมีในระบบไหม
-    const subject = window.db.getSubject(code);
+    const subject = await window.db.getSubject(code);
     if (!subject) {
       alert('ไม่พบรหัสวิชานี้ในระบบ โปรดตรวจสอบความถูกต้องของตัวอักษรอีกครั้ง');
       return;
     }
 
     // ทำการเข้าร่วมห้องเรียน
-    const success = window.db.enrollStudent(currentUser.id, code);
+    const success = await window.db.enrollStudent(currentUser.id, code);
     if (success) {
       alert(`ยินดีต้อนรับ! คุณเข้าร่วมห้องเรียนรายวิชา "${subject.name}" สำเร็จ`);
       closeModal();
-      switchView(currentView); // รีโหลดหน้านั้น
+      await switchView(currentView); // รีโหลดหน้านั้น
     } else {
       alert('คุณลงทะเบียนเรียนวิชานี้ไว้เรียบร้อยแล้ว ไม่ต้องทำซ้ำ');
     }
@@ -706,10 +707,10 @@ function openEnrollmentModal() {
 // -------------------------------------------------------------
 // 7. หมวดหมู่นักเรียน - ตารางเข้าสอบ (Student Exam Scheduling)
 // -------------------------------------------------------------
-function renderStudentExams(container) {
-  const enrolledSubjects = window.db.getStudentSubjects(currentUser.id);
-  const attempts = window.db.getAttemptsByStudent(currentUser.id);
-  const exams = window.db.getExams();
+async function renderStudentExams(container) {
+  const enrolledSubjects = await window.db.getStudentSubjects(currentUser.id);
+  const attempts = await window.db.getAttemptsByStudent(currentUser.id);
+  const exams = await window.db.getExams();
 
   // กรองหาข้อสอบที่สัมพันธ์กับวิชาเรียนทั้งหมดของนร.
   const activeExams = exams.filter(ex => enrolledSubjects.some(sub => sub.id === ex.subjectId));
@@ -730,7 +731,7 @@ function renderStudentExams(container) {
   } else {
     html += `<div class="cards-grid">`;
     activeExams.forEach(ex => {
-      const subject = window.db.getSubject(ex.subjectId);
+      const subject = await window.db.getSubject(ex.subjectId);
       const attempt = attempts.find(a => a.examId === ex.id);
       
       let badgeHtml = '';
@@ -794,8 +795,8 @@ function renderStudentExams(container) {
 // -------------------------------------------------------------
 // 8. หมวดหมู่นักเรียน - ประวัติการสอบ (Student Historical Scores)
 // -------------------------------------------------------------
-function renderStudentHistory(container) {
-  const attempts = window.db.getAttemptsByStudent(currentUser.id);
+async function renderStudentHistory(container) {
+  const attempts = await window.db.getAttemptsByStudent(currentUser.id);
 
   let html = `
     <div class="view-title-container">
@@ -885,10 +886,10 @@ function renderStudentHistory(container) {
 // 9. แสดงผลรายละเอียดผลการสอบ & เฉลยข้อสอบ (Attempt Feedback)
 // -------------------------------------------------------------
 window.viewAttemptDetails = function(attemptId) {
-  const att = window.db.getAttempt(attemptId);
+  const att = await window.db.getAttempt(attemptId);
   if (!att) return;
 
-  const exam = window.db.getExam(att.examId);
+  const exam = await window.db.getExam(att.examId);
   
   let html = `
     <div style="padding: 10px;">
@@ -991,8 +992,8 @@ window.viewAttemptDetails = function(attemptId) {
 // -------------------------------------------------------------
 // 10. คุณครู - จัดการวิชาเรียน (Teacher Subject Management)
 // -------------------------------------------------------------
-function renderTeacherSubjects(container) {
-  const subjects = window.db.getSubjectsByTeacher(currentUser.id);
+async function renderTeacherSubjects(container) {
+  const subjects = await window.db.getSubjectsByTeacher(currentUser.id);
 
   let html = `
     <div class="view-title-container">
@@ -1015,8 +1016,8 @@ function renderTeacherSubjects(container) {
   } else {
     html += `<div class="cards-grid">`;
     subjects.forEach(sub => {
-      const studentsCount = window.db.getEnrolledStudents(sub.id).length;
-      const examsCount = window.db.getExamsBySubject(sub.id).length;
+      const studentsCount = (await window.db.getEnrolledStudents(sub.id)).length;
+      const examsCount = (await window.db.getExamsBySubject(sub.id)).length;
 
       html += `
         <article class="item-card glass-panel">
@@ -1075,7 +1076,7 @@ function openAddSubjectModal() {
   document.getElementById('sub-cancel-btn').addEventListener('click', closeModal);
   const form = document.getElementById('add-subject-form');
   
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('sub-code-input').value.trim().toUpperCase();
     const name = document.getElementById('sub-name-input').value.trim();
@@ -1092,32 +1093,32 @@ function openAddSubjectModal() {
     }
 
     // ตรวจวิชารหัสซ้ำ
-    const exists = window.db.getSubject(id);
+    const exists = await window.db.getSubject(id);
     if (exists) {
       alert('รหัสวิชานี้ถูกใช้แล้วในระบบ โปรดตรวจสอบรหัสวิชาที่กำหนดอีกครั้ง');
       return;
     }
 
-    window.db.addSubject({
+    await window.db.addSubject({
       id,
       name,
       description,
       teacherId: currentUser.id
     });
 
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างวิชา', `สร้างรายวิชาใหม่ "${name}" (รหัส: ${id})`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างวิชา', `สร้างรายวิชาใหม่ "${name}" (รหัส: ${id})`);
     alert(`สร้างรายวิชา "${name}" สำเร็จ นักเรียนสามารถใช้รหัส: "${id}" เพื่อเข้าร่วมห้องเรียนนี้ได้ทันที`);
     closeModal();
-    switchView('teacher_subjects');
+    await switchView('teacher_subjects');
   });
 }
 
 window.deleteSubjectByTeacher = function(subjectId, subjectName) {
   if (confirm(`คุณครูต้องการลบวิชา "${subjectName}" ใช่หรือไม่?\nการลบจะล้างข้อมูลห้องสอบ คะแนนทั้งหมดของนร. ในวิชานี้ออกถาวร!`)) {
-    window.db.deleteSubject(subjectId);
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชา', `ลบวิชาเรียน "${subjectName}" (${subjectId})`);
+    await window.db.deleteSubject(subjectId);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชา', `ลบวิชาเรียน "${subjectName}" (${subjectId})`);
     alert('ลบรายวิชาเสร็จสิ้น');
-    switchView('teacher_subjects');
+    await switchView('teacher_subjects');
   }
 };
 
@@ -1126,9 +1127,9 @@ window.deleteSubjectByTeacher = function(subjectId, subjectName) {
 // -------------------------------------------------------------
 let tempQuestionsList = []; // เก็บคำถามชั่วคราวขณะเปิดฟอร์มสร้างข้อสอบ
 
-function renderTeacherExams(container) {
-  const teacherSubjects = window.db.getSubjectsByTeacher(currentUser.id);
-  const exams = window.db.getExams();
+async function renderTeacherExams(container) {
+  const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
+  const exams = await window.db.getExams();
   const teacherExams = exams.filter(ex => teacherSubjects.some(s => s.id === ex.subjectId));
 
   let html = `
@@ -1162,8 +1163,8 @@ function renderTeacherExams(container) {
   } else {
     html += `<div class="cards-grid">`;
     teacherExams.forEach(ex => {
-      const subject = window.db.getSubject(ex.subjectId);
-      const attemptsCount = window.db.getAttemptsByExam(ex.id).length;
+      const subject = await window.db.getSubject(ex.subjectId);
+      const attemptsCount = (await window.db.getAttemptsByExam(ex.id)).length;
 
       html += `
         <article class="item-card glass-panel" style="${ex.active ? '' : 'opacity: 0.65; border-style:dashed;'}">
@@ -1205,16 +1206,16 @@ function renderTeacherExams(container) {
 }
 
 function toggleExamStatus(examId, currentStatus) {
-  window.db.updateExam(examId, { active: !currentStatus });
-  switchView('teacher_exams');
+  await window.db.updateExam(examId, { active: !currentStatus });
+  await switchView('teacher_exams');
 }
 
 window.deleteExamByTeacher = function(examId, examTitle) {
   if (confirm(`คุณครูต้องการลบชุดข้อสอบ "${examTitle}" ใช่หรือไม่?\nข้อมูลการส่งสอบและคะแนนทั้งหมดของนร.จะสูญหายถาวร!`)) {
-    window.db.deleteExam(examId);
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบข้อสอบ', `ลบข้อสอบชุด "${examTitle}" (${examId})`);
+    await window.db.deleteExam(examId);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบข้อสอบ', `ลบข้อสอบชุด "${examTitle}" (${examId})`);
     alert('ลบข้อสอบสำเร็จเรียบร้อย');
-    switchView('teacher_exams');
+    await switchView('teacher_exams');
   }
 };
 
@@ -1230,7 +1231,7 @@ function openCreateExamView() {
     }
   ];
 
-  const teacherSubjects = window.db.getSubjectsByTeacher(currentUser.id);
+  const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
   const contentArea = document.getElementById('main-content-view');
 
   let subjectOptionsHtml = '';
@@ -1241,7 +1242,7 @@ function openCreateExamView() {
   contentArea.innerHTML = `
     <div class="view-title-container">
       <h2><i class="lucide-icon" data-lucide="plus-circle" style="vertical-align:middle; margin-right:8px;"></i>สร้างชุดข้อสอบออนไลน์ตัวใหม่</h2>
-      <button class="btn btn-secondary" onclick="switchView('teacher_exams')">ย้อนกลับ</button>
+      <button class="btn btn-secondary" onclick="await switchView('teacher_exams')">ย้อนกลับ</button>
     </div>
 
     <div class="exam-builder-card glass-panel">
@@ -1295,7 +1296,7 @@ function openCreateExamView() {
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border-glass); padding-top:24px; margin-top:32px;">
-          <button type="button" class="btn btn-secondary" onclick="switchView('teacher_exams')">ยกเลิก</button>
+          <button type="button" class="btn btn-secondary" onclick="await switchView('teacher_exams')">ยกเลิก</button>
           <button type="submit" class="btn btn-primary">บันทึกและเผยแพร่ข้อสอบ</button>
         </div>
       </form>
@@ -1307,7 +1308,7 @@ function openCreateExamView() {
 
   // ผูกแบบจำลอง Submit ฟอร์ม
   const form = document.getElementById('builder-main-form');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     // โหลดเก็บค่าจากฟอร์มคำถามใน HTML
@@ -1330,7 +1331,7 @@ function openCreateExamView() {
     }
 
     // ทำการเซฟข้อสอบชุดใหม่ลง Local Database
-    window.db.addExam({
+    await window.db.addExam({
       subjectId,
       title,
       description,
@@ -1339,13 +1340,13 @@ function openCreateExamView() {
       questions: tempQuestionsList
     });
 
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างข้อสอบ', `ครูสร้างข้อสอบใหม่เรื่อง "${title}" วิชา ${subjectId}`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างข้อสอบ', `ครูสร้างข้อสอบใหม่เรื่อง "${title}" วิชา ${subjectId}`);
     alert(`สร้างและจัดระบบเผยแพร่ข้อสอบชุด "${title}" ลงห้องเรียนเสร็จสิ้น!`);
-    switchView('teacher_exams');
+    await switchView('teacher_exams');
   });
 }
 
-function renderBuilderQuestions() {
+async function renderBuilderQuestions() {
   const container = document.getElementById('builder-questions-list-holder');
   let html = '';
 
@@ -1482,12 +1483,12 @@ function escapeHtml(text) {
 // -------------------------------------------------------------
 // 12. คุณครู - ห้องตรวจส่งข้อสอบ (Teacher Attempt Evaluation)
 // -------------------------------------------------------------
-function renderTeacherGrading(container) {
-  const teacherSubjects = window.db.getSubjectsByTeacher(currentUser.id);
-  const exams = window.db.getExams();
+async function renderTeacherGrading(container) {
+  const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
+  const exams = await window.db.getExams();
   const teacherExams = exams.filter(ex => teacherSubjects.some(s => s.id === ex.subjectId));
   
-  const attempts = window.db.getAttempts();
+  const attempts = await window.db.getAttempts();
   const submissions = attempts.filter(att => teacherExams.some(ex => ex.id === att.examId));
 
   let html = `
@@ -1570,10 +1571,10 @@ function renderTeacherGrading(container) {
 }
 
 window.openTeacherGradeOverlay = function(attemptId) {
-  const att = window.db.getAttempt(attemptId);
+  const att = await window.db.getAttempt(attemptId);
   if (!att) return;
 
-  const exam = window.db.getExam(att.examId);
+  const exam = await window.db.getExam(att.examId);
   if (!exam) {
     alert('ข้อสอบต้นฉบับโดนลบออกไปแล้ว ไม่สามารถดำเนินการให้คะแนนได้');
     return;
@@ -1683,20 +1684,20 @@ window.openTeacherGradeOverlay = function(attemptId) {
 
     const comment = document.getElementById('grade-teacher-comment').value.trim();
 
-    window.db.updateAttemptGrading(attemptId, { finalScore }, comment);
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ตรวจคะแนน', `ครูส่งคะแนนตรวจ "${att.examTitle}" ของ ${att.studentName} คะแนนรวม ${finalScore} คะแนน`);
+    await window.db.updateAttemptGrading(attemptId, { finalScore }, comment);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ตรวจคะแนน', `ครูส่งคะแนนตรวจ "${att.examTitle}" ของ ${att.studentName} คะแนนรวม ${finalScore} คะแนน`);
     
     alert(`ประเมินและให้คะแนน "${att.studentName}" สำเร็จ!`);
     closeModal();
-    switchView('teacher_grading');
+    await switchView('teacher_grading');
   });
 };
 
 // -------------------------------------------------------------
 // 13. คุณครู - แผงวิเคราะห์และดาวน์โหลดสถิติคะแนน (Reports & Charts)
 // -------------------------------------------------------------
-function renderTeacherReports(container) {
-  const teacherSubjects = window.db.getSubjectsByTeacher(currentUser.id);
+async function renderTeacherReports(container) {
+  const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
   
   let optionsHtml = '';
   teacherSubjects.forEach(s => {
@@ -1750,9 +1751,9 @@ function renderTeacherReports(container) {
 
 function updateTeacherReportsDashboard(subjectId) {
   const panel = document.getElementById('reports-analytics-panel');
-  const subject = window.db.getSubject(subjectId);
-  const exams = window.db.getExamsBySubject(subjectId);
-  const attempts = window.db.getAttempts().filter(a => a.subjectId === subjectId);
+  const subject = await window.db.getSubject(subjectId);
+  const exams = await window.db.getExamsBySubject(subjectId);
+  const attempts = (await window.db.getAttempts()).filter(a => a.subjectId === subjectId);
 
   if (attempts.length === 0) {
     panel.innerHTML = `
@@ -1954,13 +1955,13 @@ function updateTeacherReportsDashboard(subjectId) {
 }
 
 function downloadGradebookCSV(subjectId) {
-  const attempts = window.db.getAttempts().filter(a => a.subjectId === subjectId);
+  const attempts = (await window.db.getAttempts()).filter(a => a.subjectId === subjectId);
   if (attempts.length === 0) {
     alert('ไม่มีข้อมูลผลการเรียนที่สามารถนำออกเป็นไฟล์ CSV ได้ในรายวิชานี้');
     return;
   }
 
-  const subject = window.db.getSubject(subjectId);
+  const subject = await window.db.getSubject(subjectId);
 
   let csvContent = "\ufeff"; // BOM สำหรับอ่านอักษรไทย Excel ได้
   csvContent += "รหัสนักเรียน,ชื่อนักเรียน,ชุดข้อสอบ,วันที่ส่งกระดาษ,เวลาที่ใช้สอบ (วินาที),ออกนอกหน้าจอ (ครั้ง),สถานะการโกง,คะแนนรวม,คะแนนเต็ม\n";
@@ -1982,8 +1983,8 @@ function downloadGradebookCSV(subjectId) {
 // -------------------------------------------------------------
 // 14. ผู้ดูแลระบบ - จัดการผู้ใช้ทั้งหมดในระบบ (Admin User CRUD)
 // -------------------------------------------------------------
-function renderAdminUsers(container) {
-  const users = window.db.getUsers();
+async function renderAdminUsers(container) {
+  const users = await window.db.getUsers();
 
   container.innerHTML = `
     <div class="view-title-container">
@@ -2028,9 +2029,9 @@ function renderAdminUsers(container) {
   document.getElementById('admin-create-user-btn').addEventListener('click', openAdminCreateUserModal);
 }
 
-function renderAdminUsersTable(filterText) {
+async function renderAdminUsersTable(filterText) {
   const body = document.getElementById('admin-users-table-body');
-  const users = window.db.getUsers();
+  const users = await window.db.getUsers();
   
   const filtered = users.filter(u => 
     u.username.toLowerCase().includes(filterText) ||
@@ -2069,14 +2070,14 @@ function renderAdminUsersTable(filterText) {
 }
 
 window.toggleUserStatus = function(userId, currentStatus) {
-  window.db.updateUser(userId, { active: !currentStatus });
+  await window.db.updateUser(userId, { active: !currentStatus });
   renderAdminUsersTable(document.getElementById('admin-user-search-input').value.trim().toLowerCase());
 };
 
 window.deleteUserByAdmin = function(userId, username) {
   if (confirm(`คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้ "${username}" ใช่หรือไม่?\nข้อมูลการเรียน คอร์ส และผลการสอบทั้งหมดของนักเรียนจะหายไปด้วย!`)) {
-    window.db.deleteUser(userId);
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบผู้ใช้', `แอดมินลบบัญชีผู้ใช้ "${username}" (${userId})`);
+    await window.db.deleteUser(userId);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบผู้ใช้', `แอดมินลบบัญชีผู้ใช้ "${username}" (${userId})`);
     renderAdminUsers(document.getElementById('main-content-view'));
   }
 };
@@ -2112,7 +2113,7 @@ function openAdminCreateUserModal() {
   `);
 
   const form = document.getElementById('admin-create-user-form');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const role = document.getElementById('adm-c-role').value;
     const name = document.getElementById('adm-c-name').value.trim();
@@ -2125,20 +2126,21 @@ function openAdminCreateUserModal() {
     }
 
     // เช็ค ID ซ้ำ
-    const exists = window.db.getUsers().some(u => u.username.toLowerCase() === username.toLowerCase());
+    const users = await window.db.getUsers();
+      const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
     if (exists) {
       alert('ชื่อ Username นี้ถูกใช้งานแล้ว โปรดเลือกตัวตนไอดีใหม่');
       return;
     }
 
-    window.db.addUser({
+    await window.db.addUser({
       username,
       password,
       name,
       role
     });
 
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แอดมินสร้างผู้ใช้', `สร้างไอดีล็อกอิน "${username}" บทบาท ${role}`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แอดมินสร้างผู้ใช้', `สร้างไอดีล็อกอิน "${username}" บทบาท ${role}`);
     alert(`สร้างบัญชีระบบของ "${name}" สำเร็จพร้อมใช้งาน!`);
     closeModal();
     renderAdminUsers(document.getElementById('main-content-view'));
@@ -2146,7 +2148,7 @@ function openAdminCreateUserModal() {
 }
 
 window.openAdminEditUserModal = function(userId) {
-  const u = window.db.getUser(userId);
+  const u = await window.db.getUser(userId);
   if (!u) return;
 
   openModal('แก้ไขรายละเอียดบัญชีผู้ใช้งาน', `
@@ -2171,7 +2173,7 @@ window.openAdminEditUserModal = function(userId) {
   `);
 
   const form = document.getElementById('admin-edit-user-form');
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('adm-e-name').value.trim();
     const password = document.getElementById('adm-e-password').value;
@@ -2181,8 +2183,8 @@ window.openAdminEditUserModal = function(userId) {
       return;
     }
 
-    window.db.updateUser(userId, { name, password });
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}"`);
+    await window.db.updateUser(userId, { name, password });
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}"`);
     
     alert('บันทึกการแก้ไขข้อมูลผู้เรียนเสร็จสิ้น!');
     closeModal();
@@ -2193,8 +2195,8 @@ window.openAdminEditUserModal = function(userId) {
 // -------------------------------------------------------------
 // 15. ผู้ดูแลระบบ - จัดการวิชาเรียนทั้งหมดในระบบ (Admin Subject Controls)
 // -------------------------------------------------------------
-function renderAdminSubjects(container) {
-  const subjects = window.db.getSubjects();
+async function renderAdminSubjects(container) {
+  const subjects = await window.db.getSubjects();
 
   container.innerHTML = `
     <div class="view-title-container">
@@ -2215,9 +2217,9 @@ function renderAdminSubjects(container) {
         </thead>
         <tbody>
           ${subjects.map(s => {
-            const teacher = window.db.getUser(s.teacherId);
-            const stdCount = window.db.getEnrolledStudents(s.id).length;
-            const exCount = window.db.getExamsBySubject(s.id).length;
+            const teacher = await window.db.getUser(s.teacherId);
+            const stdCount = (await window.db.getEnrolledStudents(s.id)).length;
+            const exCount = (await window.db.getExamsBySubject(s.id)).length;
             return `
               <tr>
                 <td><strong>${s.id}</strong></td>
@@ -2242,8 +2244,8 @@ function renderAdminSubjects(container) {
 
 window.deleteSubjectByAdmin = function(subjectId, subjectName) {
   if (confirm(`ผู้ดูแลระบบต้องการลบวิชา "${subjectName}" ใช่หรือไม่?\nการลบจะล้างข้อมูลวิชา ข้อสอบ และคะแนนของนร. ออกทั้งหมดและไม่สามารถกู้คืนได้!`)) {
-    window.db.deleteSubject(subjectId);
-    window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชาโดยแอดมิน', `แอดมินลบรายวิชา "${subjectName}" (${subjectId})`);
+    await window.db.deleteSubject(subjectId);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชาโดยแอดมิน', `แอดมินลบรายวิชา "${subjectName}" (${subjectId})`);
     alert('ลบรายวิชาสำเร็จ');
     renderAdminSubjects(document.getElementById('main-content-view'));
   }
@@ -2252,8 +2254,8 @@ window.deleteSubjectByAdmin = function(subjectId, subjectName) {
 // -------------------------------------------------------------
 // 16. ผู้ดูแลระบบ - ล็อกความประพฤติระบบและประวัติการสอบ (System logs / Audit Trail)
 // -------------------------------------------------------------
-function renderAdminLogs(container) {
-  const logs = window.db.getLogs();
+async function renderAdminLogs(container) {
+  const logs = await window.db.getLogs();
 
   container.innerHTML = `
     <div class="view-title-container">
@@ -2293,7 +2295,7 @@ function renderAdminLogs(container) {
 // -------------------------------------------------------------
 // 17. ผู้ดูแลระบบ - สำรองและนำเข้ากู้ข้อมูลระบบ (Backup & Restore System)
 // -------------------------------------------------------------
-function renderAdminBackup(container) {
+async function renderAdminBackup(container) {
   container.innerHTML = `
     <div class="view-title-container">
       <h2>ระบบสำรองและนำเข้ากู้ข้อมูลจำลอง (Backup & Restore) ⚙️</h2>
@@ -2337,7 +2339,7 @@ function renderAdminBackup(container) {
 
   // บัญญัติการดาวน์โหลด
   document.getElementById('backup-download-btn').addEventListener('click', () => {
-    const data = window.db.exportBackup();
+    const data = await window.db.exportBackup();
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -2361,9 +2363,9 @@ function renderAdminBackup(container) {
 
     reader.onload = (e) => {
       const content = e.target.result;
-      const success = window.db.importBackup(content);
+      const success = await window.db.importBackup(content);
       if (success) {
-        window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'กู้คืนระบบ', 'นำเข้าและกู้คืนไฟล์ Database JSON ประสบความสำเร็จ');
+        await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'กู้คืนระบบ', 'นำเข้าและกู้คืนไฟล์ Database JSON ประสบความสำเร็จ');
         alert('การนำเข้ากู้ข้อมูลเสร็จสมบูรณ์เรียบร้อย! ระบบจะทำการรีโหลดสิทธิ์และการจำลองใหม่');
         showAppShell();
       } else {
@@ -2378,7 +2380,7 @@ function renderAdminBackup(container) {
 // 18. ระบบสอบและการป้องกันการทุจริตแบบเรียลไทม์ (Exam Engine)
 // -------------------------------------------------------------
 window.initiateExam = function(examId) {
-  const exam = window.db.getExam(examId);
+  const exam = await window.db.getExam(examId);
   if (!exam) return;
 
   if (confirm(`คุณต้องการเริ่มทำข้อสอบออนไลน์ในชุด "${exam.title}" หรือไม่?\n\n** ข้อบังคับและระเบียบความปลอดภัย **\n1. ระบบจะบังคับล็อคหน้าจอของท่านให้อยู่ในโหมดเต็มหน้าจอ (Fullscreen)\n2. ห้ามสลับแท็บ ย่อบราวเซอร์ หรือเปิดแอปฯ อื่นโดยเด็ดขาด\n3. อนุญาตให้ออกนอกหน้าจอได้ไม่เกิน 2 ครั้ง ครั้งที่ 3 ระบบจะทำการระงับและส่งกระดาษคำตอบทันที!`)) {
@@ -2478,7 +2480,7 @@ function startExamTimer() {
   examSession.timerInterval = setInterval(updateTimerString, 1000);
 }
 
-function renderExamQuestionsNavigationGrid() {
+async function renderExamQuestionsNavigationGrid() {
   const grid = document.getElementById('questions-navigation-grid');
   let html = '';
 
@@ -2495,7 +2497,7 @@ function renderExamQuestionsNavigationGrid() {
   grid.innerHTML = html;
 }
 
-function renderExamQuestion(index) {
+async function renderExamQuestion(index) {
   examSession.currentQuestionIndex = index;
   
   // นำทางปุ่มวิทยานิพนธ์ข้างล่างซิงค์
@@ -2604,7 +2606,7 @@ function bindExamEvents() {
   document.getElementById('exit-cheated-exam-btn').addEventListener('click', () => {
     document.getElementById('anti-cheat-terminated-overlay').style.display = 'none';
     cleanupExamSession();
-    switchView('dashboard');
+    await switchView('dashboard');
   });
 }
 
@@ -2652,7 +2654,7 @@ function submitExamSheetDirectly(status) {
   const timeSpent = timeLimitSeconds - examSession.secondsLeft;
 
   // ส่งบันทึกคะแนนเข้า DB
-  window.db.addAttempt({
+  await window.db.addAttempt({
     studentId: currentUser.id,
     studentName: currentUser.name,
     examId: activeExam.id,
@@ -2679,7 +2681,7 @@ function submitExamSheetDirectly(status) {
     document.getElementById('anti-cheat-terminated-overlay').style.display = 'flex';
   } else {
     alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nระบบทำการคำนวณคะแนนปรนัยของท่านอัตโนมัติแล้ว`);
-    switchView('student_exams');
+    await switchView('student_exams');
   }
 }
 
