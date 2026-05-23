@@ -279,6 +279,11 @@ body {
 }
 
 /* Inputs */
+input, textarea, select {
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
@@ -427,10 +432,9 @@ header {
 /* Splash/Auth Screens */
 .auth-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex: 1;
   padding: 20px;
+  overflow-y: auto;
   background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 45%),
               radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.1), transparent 45%);
 }
@@ -438,6 +442,7 @@ header {
   width: 100%;
   max-width: 440px;
   padding: 40px;
+  margin: auto;
 }
 .auth-header {
   text-align: center;
@@ -497,6 +502,10 @@ header {
   color: var(--primary);
   text-decoration: none;
   font-weight: 500;
+  margin-left: 4px;
+  cursor: pointer;
+  padding: 8px;
+  display: inline-block;
 }
 .auth-footer a:hover {
   text-decoration: underline;
