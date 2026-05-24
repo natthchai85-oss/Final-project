@@ -3,8 +3,20 @@
 const SUPABASE_URL = 'https://gcnbdgcahtgtipamsatz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Z8nfleX2cVH8xm8njM2yVw_Z-sLFBDE';
 
-// สร้างอินสแตนซ์ Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function normalizeRow(row) {
+  if (!row || typeof row !== 'object') return row;
+  const out = {};
+  for (const [key, value] of Object.entries(row)) {
+    out[key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = value;
+  }
+  return out;
+}
+
+function mapRows(rows) {
+  return Array.isArray(rows) ? rows.map(normalizeRow) : [];
+}
 
 class SupabaseDatabase {
   constructor() {
@@ -15,19 +27,33 @@ class SupabaseDatabase {
   // หมวดหมู่ผู้ใช้งาน (Users API)
   // -------------------------------------------------------------
   async getUsers() {
-    const { data, error } = await supabase.from('users').select('*').order('id', { ascending: true });
+    const { data, error } = await supabaseClient.from('users').select('*').order('id', { ascending: true });
     if (error) { console.error('getUsers error:', error); return []; }
-    return data;
+    return mapRows(data);
+  }
+
+  async getUsersByIds(ids) {
+    const unique = [...new Set((ids || []).filter(Boolean))];
+    if (!unique.length) return [];
+    const { data, error } = await supabaseClient.from('users').select('*').in('id', unique);
+    if (error) { console.error('getUsersByIds error:', error); return []; }
+    return mapRows(data);
+  }
+
+  async isUsernameTaken(username) {
+    const { data, error } = await supabaseClient.from('users').select('id').ilike('username', username).limit(1);
+    if (error) { console.error('isUsernameTaken error:', error); return false; }
+    return data && data.length > 0;
   }
 
   async getUser(userId) {
-    const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
+    const { data, error } = await supabaseClient.from('users').select('*').eq('id', userId).single();
     if (error) { console.error('getUser error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async authenticate(username, password) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('users')
       .select('*')
       .ilike('username', username)
@@ -40,71 +66,71 @@ class SupabaseDatabase {
     if (!data.active) {
       throw new Error('บัญชีนี้ถูกปิดใช้งานชั่วคราว กรุณาติดต่อผู้ดูแลระบบ');
     }
-    return data;
+    return normalizeRow(data);
   }
 
   async addUser(user) {
     const id = 'usr_' + Date.now();
     const newUser = { id, active: true, ...user };
-    const { data, error } = await supabase.from('users').insert([newUser]).select().single();
+    const { data, error } = await supabaseClient.from('users').insert([newUser]).select().single();
     if (error) throw error;
     
     await this.addLog(newUser.id, newUser.name, newUser.role, 'สมัครสมาชิก', `ลงทะเบียนผู้ใช้งานบทบาท ${newUser.role}`);
-    return data;
+    return normalizeRow(data);
   }
 
   async updateUser(userId, updatedData) {
-    const { data, error } = await supabase.from('users').update(updatedData).eq('id', userId).select().single();
+    const { data, error } = await supabaseClient.from('users').update(updatedData).eq('id', userId).select().single();
     if (error) { console.error('updateUser error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async deleteUser(userId) {
-    await supabase.from('users').delete().eq('id', userId);
+    await supabaseClient.from('users').delete().eq('id', userId);
   }
 
   // -------------------------------------------------------------
   // หมวดหมู่วิชา (Subjects API)
   // -------------------------------------------------------------
   async getSubjects() {
-    const { data, error } = await supabase.from('subjects').select('*');
+    const { data, error } = await supabaseClient.from('subjects').select('*');
     if (error) { console.error('getSubjects error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async getSubject(subjectId) {
-    const { data, error } = await supabase.from('subjects').select('*').eq('id', subjectId).single();
+    const { data, error } = await supabaseClient.from('subjects').select('*').eq('id', subjectId).single();
     if (error) { console.error('getSubject error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async getSubjectsByTeacher(teacherId) {
-    const { data, error } = await supabase.from('subjects').select('*').eq('teacher_id', teacherId);
+    const { data, error } = await supabaseClient.from('subjects').select('*').eq('teacher_id', teacherId);
     if (error) { console.error('getSubjectsByTeacher error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async addSubject(subject) {
-    const { data, error } = await supabase.from('subjects').insert([subject]).select().single();
+    const { data, error } = await supabaseClient.from('subjects').insert([subject]).select().single();
     if (error) { console.error('addSubject error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async deleteSubject(subjectId) {
-    await supabase.from('subjects').delete().eq('id', subjectId);
+    await supabaseClient.from('subjects').delete().eq('id', subjectId);
   }
 
   // -------------------------------------------------------------
   // หมวดหมู่การเข้าร่วมชั้นเรียน (Enrollments API)
   // -------------------------------------------------------------
   async getEnrollments() {
-    const { data, error } = await supabase.from('enrollments').select('*');
+    const { data, error } = await supabaseClient.from('enrollments').select('*');
     if (error) { console.error('getEnrollments error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async enrollStudent(studentId, subjectId) {
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseClient
       .from('enrollments')
       .select('id')
       .eq('student_id', studentId)
@@ -113,13 +139,13 @@ class SupabaseDatabase {
       
     if (existing) return false;
 
-    const { error } = await supabase.from('enrollments').insert([{ student_id: studentId, subject_id: subjectId }]);
+    const { error } = await supabaseClient.from('enrollments').insert([{ student_id: studentId, subject_id: subjectId }]);
     if (error) { console.error('enrollStudent error:', error); return false; }
     return true;
   }
 
   async getStudentSubjects(studentId) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('enrollments')
       .select('subject_id')
       .eq('student_id', studentId);
@@ -127,17 +153,17 @@ class SupabaseDatabase {
     if (error || !data || data.length === 0) return [];
     
     const subjectIds = data.map(e => e.subject_id);
-    const { data: subjects, error: subError } = await supabase
+    const { data: subjects, error: subError } = await supabaseClient
       .from('subjects')
       .select('*')
       .in('id', subjectIds);
       
     if (subError) { console.error('getStudentSubjects error:', subError); return []; }
-    return subjects;
+    return mapRows(subjects);
   }
 
   async getEnrolledStudents(subjectId) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('enrollments')
       .select('student_id')
       .eq('subject_id', subjectId);
@@ -145,79 +171,79 @@ class SupabaseDatabase {
     if (error || !data || data.length === 0) return [];
     
     const studentIds = data.map(e => e.student_id);
-    const { data: users, error: userError } = await supabase
+    const { data: users, error: userError } = await supabaseClient
       .from('users')
       .select('*')
       .in('id', studentIds);
       
     if (userError) { console.error('getEnrolledStudents error:', userError); return []; }
-    return users;
+    return mapRows(users);
   }
 
   // -------------------------------------------------------------
   // หมวดหมู่ข้อสอบ (Exams API)
   // -------------------------------------------------------------
   async getExams() {
-    const { data, error } = await supabase.from('exams').select('*');
+    const { data, error } = await supabaseClient.from('exams').select('*');
     if (error) { console.error('getExams error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async getExam(examId) {
-    const { data, error } = await supabase.from('exams').select('*').eq('id', examId).single();
+    const { data, error } = await supabaseClient.from('exams').select('*').eq('id', examId).single();
     if (error) { console.error('getExam error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async getExamsBySubject(subjectId) {
-    const { data, error } = await supabase.from('exams').select('*').eq('subject_id', subjectId);
+    const { data, error } = await supabaseClient.from('exams').select('*').eq('subject_id', subjectId);
     if (error) { console.error('getExamsBySubject error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async addExam(examData) {
     const id = 'exm_' + Date.now();
     const newExam = { id, active: true, questions: [], ...examData };
-    const { data, error } = await supabase.from('exams').insert([newExam]).select().single();
+    const { data, error } = await supabaseClient.from('exams').insert([newExam]).select().single();
     if (error) { console.error('addExam error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async updateExam(examId, examData) {
-    const { data, error } = await supabase.from('exams').update(examData).eq('id', examId).select().single();
+    const { data, error } = await supabaseClient.from('exams').update(examData).eq('id', examId).select().single();
     if (error) { console.error('updateExam error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async deleteExam(examId) {
-    await supabase.from('exams').delete().eq('id', examId);
+    await supabaseClient.from('exams').delete().eq('id', examId);
   }
 
   // -------------------------------------------------------------
   // หมวดหมู่ความพยายามในการสอบและการให้คะแนน (Exam Attempts API)
   // -------------------------------------------------------------
   async getAttempts() {
-    const { data, error } = await supabase.from('attempts').select('*');
+    const { data, error } = await supabaseClient.from('attempts').select('*');
     if (error) { console.error('getAttempts error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async getAttemptsByStudent(studentId) {
-    const { data, error } = await supabase.from('attempts').select('*').eq('student_id', studentId);
+    const { data, error } = await supabaseClient.from('attempts').select('*').eq('student_id', studentId);
     if (error) { console.error('getAttemptsByStudent error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async getAttemptsByExam(examId) {
-    const { data, error } = await supabase.from('attempts').select('*').eq('exam_id', examId);
+    const { data, error } = await supabaseClient.from('attempts').select('*').eq('exam_id', examId);
     if (error) { console.error('getAttemptsByExam error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async getAttempt(attemptId) {
-    const { data, error } = await supabase.from('attempts').select('*').eq('id', attemptId).single();
+    const { data, error } = await supabaseClient.from('attempts').select('*').eq('id', attemptId).single();
     if (error) { console.error('getAttempt error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   async addAttempt(attemptData) {
@@ -239,7 +265,7 @@ class SupabaseDatabase {
       }
     }
 
-    const { data, error } = await supabase.from('attempts').insert([newAttempt]).select().single();
+    const { data, error } = await supabaseClient.from('attempts').insert([newAttempt]).select().single();
     if (error) { console.error('addAttempt error:', error); throw error; }
 
     await this.addLog(
@@ -250,11 +276,11 @@ class SupabaseDatabase {
       `ส่งกระดาษคำตอบวิชา ${newAttempt.exam_title} สถานะ: ${newAttempt.status === 'cheated' ? 'ส่งด่วนเนื่องจากทุจริต' : 'เสร็จสมบูรณ์'}, คะแนนดิบ: ${newAttempt.score} คะแนน`
     );
 
-    return data;
+    return normalizeRow(data);
   }
 
   async updateAttemptGrading(attemptId, scoreUpdates, teacherComment) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('attempts')
       .update({
         score: scoreUpdates.finalScore,
@@ -266,16 +292,16 @@ class SupabaseDatabase {
       .single();
       
     if (error) { console.error('updateAttemptGrading error:', error); return null; }
-    return data;
+    return data ? normalizeRow(data) : null;
   }
 
   // -------------------------------------------------------------
   // หมวดหมู่บันทึกกิจกรรม (Audit Logs API)
   // -------------------------------------------------------------
   async getLogs() {
-    const { data, error } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(200);
+    const { data, error } = await supabaseClient.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(200);
     if (error) { console.error('getLogs error:', error); return []; }
-    return data;
+    return mapRows(data);
   }
 
   async addLog(userId, userName, role, action, details) {
@@ -290,7 +316,7 @@ class SupabaseDatabase {
     };
     
     // We don't await this so it doesn't block UI flows
-    supabase.from('audit_logs').insert([newLog]).then(({error}) => {
+    supabaseClient.from('audit_logs').insert([newLog]).then(({error}) => {
       if (error) console.error('addLog error:', error);
     });
     

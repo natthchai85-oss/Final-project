@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <link rel="preconnect" href="https://gcnbdgcahtgtipamsatz.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
   <!-- SEO Best Practices -->
   <title>วิทยาลัยเทคนิคตาก - ระบบสอบออนไลน์</title>
   <meta name="description"
@@ -23,11 +26,8 @@
   <!-- Stylesheets -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
   <!-- Supabase JS Client CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 
 <body class="dark-theme" id="app-body">
@@ -297,7 +297,6 @@
       </div>
     </div>
   </div>
-  </div>
 
   <!-- ========================================== -->
   <!-- 6. หน้าต่างเลือกธีมสี (THEME PICKER MODAL) -->
@@ -351,23 +350,9 @@
   <!-- ========================================== -->
   <!-- 6. สคริปต์การโหลดฐานข้อมูลและโค้ดควบคุมระบบ -->
   <!-- ========================================== -->
-  <script src="database.js"></script>
-  <script src="app.js"></script>
-
-  <!-- Service Worker Registration for PWA -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-      });
-    }
-  </script>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
+  <script src="database.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 
 </html>
