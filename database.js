@@ -69,7 +69,7 @@ class SupabaseDatabase {
       .ilike('username', username)
       .eq('password', password)
       .single();
-    
+
     if (error || !data) {
       return null;
     }
@@ -84,7 +84,7 @@ class SupabaseDatabase {
     const newUser = { id, active: true, ...user };
     const { data, error } = await supabaseClient.from('users').insert([newUser]).select().single();
     if (error) throw error;
-    
+
     await this.addLog(newUser.id, newUser.name, newUser.role, 'สมัครสมาชิก', `ลงทะเบียนผู้ใช้งานบทบาท ${newUser.role}`);
     return normalizeRow(data);
   }
@@ -147,7 +147,7 @@ class SupabaseDatabase {
       .eq('student_id', studentId)
       .eq('subject_id', subjectId)
       .single();
-      
+
     if (existing) return false;
 
     const { error } = await supabaseClient.from('enrollments').insert([{ student_id: studentId, subject_id: subjectId }]);
@@ -160,15 +160,15 @@ class SupabaseDatabase {
       .from('enrollments')
       .select('subject_id')
       .eq('student_id', studentId);
-      
+
     if (error || !data || data.length === 0) return [];
-    
+
     const subjectIds = data.map(e => e.subject_id);
     const { data: subjects, error: subError } = await supabaseClient
       .from('subjects')
       .select('*')
       .in('id', subjectIds);
-      
+
     if (subError) { console.error('getStudentSubjects error:', subError); return []; }
     return mapRows(subjects);
   }
@@ -178,15 +178,15 @@ class SupabaseDatabase {
       .from('enrollments')
       .select('student_id')
       .eq('subject_id', subjectId);
-      
+
     if (error || !data || data.length === 0) return [];
-    
+
     const studentIds = data.map(e => e.student_id);
     const { data: users, error: userError } = await supabaseClient
       .from('users')
       .select('*')
       .in('id', studentIds);
-      
+
     if (userError) { console.error('getEnrolledStudents error:', userError); return []; }
     return mapRows(users);
   }
@@ -301,7 +301,7 @@ class SupabaseDatabase {
       .eq('id', attemptId)
       .select()
       .single();
-      
+
     if (error) { console.error('updateAttemptGrading error:', error); return null; }
     return data ? normalizeRow(data) : null;
   }
@@ -325,12 +325,12 @@ class SupabaseDatabase {
       timestamp: new Date().toISOString(),
       details: details
     };
-    
+
     // We don't await this so it doesn't block UI flows
-    supabaseClient.from('audit_logs').insert([newLog]).then(({error}) => {
+    supabaseClient.from('audit_logs').insert([newLog]).then(({ error }) => {
       if (error) console.error('addLog error:', error);
     });
-    
+
     return newLog;
   }
 }

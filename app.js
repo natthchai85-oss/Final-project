@@ -53,14 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // จัดการการเปลี่ยนธีม
 function setTheme(theme) {
   const body = document.getElementById('app-body');
-  
+
   // ลบธีมเก่าออกทั้งหมด
   body.classList.remove('light-theme', 'dark-theme', 'ocean-theme', 'forest-theme', 'sunset-theme');
-  
+
   // เพิ่มธีมใหม่
   body.classList.add(theme);
   localStorage.setItem('theme', theme);
-  
+
   // อัปเดต UI หน้าต่างเลือกธีมให้ตรงกัน
   document.querySelectorAll('.theme-option-card').forEach(card => {
     if (card.getAttribute('data-theme') === theme) {
@@ -76,23 +76,23 @@ function bindThemeToggle() {
   const modal = document.getElementById('theme-modal-overlay');
   const closeBtn = document.getElementById('close-theme-modal-btn');
   const themeCards = document.querySelectorAll('.theme-option-card');
-  
+
   if (btn && modal) {
     btn.addEventListener('click', () => {
       modal.style.display = 'flex';
     });
-    
+
     closeBtn.addEventListener('click', () => {
       modal.style.display = 'none';
     });
-    
+
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.style.display = 'none';
       }
     });
   }
-  
+
   themeCards.forEach(card => {
     card.addEventListener('click', () => {
       const theme = card.getAttribute('data-theme');
@@ -175,14 +175,14 @@ function bindAuthEvents() {
           alert('กรุณากรอกชื่อ-นามสกุลจริง');
           return;
         }
-        
+
         const roleElement = document.querySelector('#reg-role-group .role-option.active');
         if (!roleElement) {
           alert('กรุณาเลือกบทบาท');
           return;
         }
         const role = roleElement.getAttribute('data-role');
-        
+
         // ตรวจชื่อผู้ใช้ซ้ำ (คิวรีเดียว ไม่ดึง users ทั้งตาราง)
         if (await window.db.isUsernameTaken(username)) {
           alert('ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว กรุณาเลือกชื่ออื่น');
@@ -361,7 +361,7 @@ async function switchView(viewName) {
     case 'dashboard':
       await renderDashboard(contentArea);
       break;
-    
+
     // บทบาทนักเรียน
     case 'student_subjects':
       await renderStudentSubjects(contentArea);
@@ -372,7 +372,7 @@ async function switchView(viewName) {
     case 'student_history':
       await renderStudentHistory(contentArea);
       break;
-      
+
     // บทบาทคุณครู
     case 'teacher_subjects':
       await renderTeacherSubjects(contentArea);
@@ -417,15 +417,15 @@ async function renderDashboard(container) {
       window.db.getAttemptsByStudent(currentUser.id),
       window.db.getExams()
     ]);
-    const pendingExams = exams.filter(ex => 
-      enrolls.some(sub => sub.id === ex.subjectId) && 
+    const pendingExams = exams.filter(ex =>
+      enrolls.some(sub => sub.id === ex.subjectId) &&
       !attempts.some(att => att.examId === ex.id) &&
       ex.active
     );
 
     container.innerHTML = `
       <div class="view-title-container">
-        <h2>แดชบอร์ดต้อนรับคุณ, ${currentUser.name} 🎓</h2>
+        <h2>แดชบอร์ดต้อนรับคุณ, ${currentUser.name} </h2>
         <button class="btn btn-primary" id="dash-enroll-trigger">
           <i class="lucide-icon" data-lucide="plus-circle"></i>
           <span>เข้าร่วมวิชาเรียน</span>
@@ -498,7 +498,7 @@ async function renderDashboard(container) {
 
     container.innerHTML = `
       <div class="view-title-container">
-        <h2>กระดานวิเคราะห์ข้อมูลของคุณครู, ${currentUser.name} 💼</h2>
+        <h2>กระดานวิเคราะห์ข้อมูลของคุณครู, ${currentUser.name} </h2>
       </div>
 
       <div class="dashboard-grid">
@@ -570,7 +570,7 @@ async function renderDashboard(container) {
 
     container.innerHTML = `
       <div class="view-title-container">
-        <h2>แดชบอร์ดหลักระบบผู้ดูแลระบบสูงสุด ⚙️</h2>
+        <h2>แดชบอร์ดหลักระบบผู้ดูแลระบบสูงสุด </h2>
       </div>
 
       <div class="dashboard-grid">
@@ -644,7 +644,7 @@ async function renderStudentSubjects(container) {
 
   let html = `
     <div class="view-title-container">
-      <h2>วิชาเรียนทั้งหมดที่ฉันลงทะเบียนไว้ 📚</h2>
+      <h2>วิชาเรียนทั้งหมดที่ฉันลงทะเบียนไว้ </h2>
       <button class="btn btn-primary" id="std-subject-enroll-btn">
         <i class="lucide-icon" data-lucide="plus"></i>
         <span>เข้าร่วมรายวิชาใหม่</span>
@@ -747,7 +747,7 @@ async function renderStudentExams(container) {
 
   let html = `
     <div class="view-title-container">
-      <h2>รายการข้อสอบและตารางสอบออนไลน์ ✍️</h2>
+      <h2>รายการข้อสอบและตารางสอบออนไลน์ </h2>
     </div>
   `;
 
@@ -763,7 +763,7 @@ async function renderStudentExams(container) {
     for (const ex of activeExams) {
       const subject = subjectMap.get(ex.subjectId);
       const attempt = attempts.find(a => a.examId === ex.id);
-      
+
       let badgeHtml = '';
       let footerBtnHtml = '';
 
@@ -830,7 +830,7 @@ async function renderStudentHistory(container) {
 
   let html = `
     <div class="view-title-container">
-      <h2>ประวัติและสถิติการสอบที่ผ่านของคุณ 🕒</h2>
+      <h2>ประวัติและสถิติการสอบที่ผ่านของคุณ </h2>
     </div>
   `;
 
@@ -915,12 +915,12 @@ async function renderStudentHistory(container) {
 // -------------------------------------------------------------
 // 9. แสดงผลรายละเอียดผลการสอบ & เฉลยข้อสอบ (Attempt Feedback)
 // -------------------------------------------------------------
-window.viewAttemptDetails = async function(attemptId) {
+window.viewAttemptDetails = async function (attemptId) {
   const att = await window.db.getAttempt(attemptId);
   if (!att) return;
 
   const exam = await window.db.getExam(att.examId);
-  
+
   let html = `
     <div style="padding: 10px;">
       <!-- แผงบนสรุปคะแนน -->
@@ -947,17 +947,17 @@ window.viewAttemptDetails = async function(attemptId) {
     exam.questions.forEach((q, idx) => {
       const studentAns = att.answers[q.id];
       const isChoice = q.type === 'choice';
-      
+
       let isCorrect = false;
       let checkIconHtml = '';
 
       if (isChoice) {
         isCorrect = parseInt(studentAns) === q.correctAnswer;
-        checkIconHtml = isCorrect 
+        checkIconHtml = isCorrect
           ? `<span style="color: var(--success); font-weight:600;"><i class="lucide-icon" data-lucide="check" style="width:14px; height:14px; display:inline-block; margin-right:4px;"></i>ตอบถูก</span>`
           : `<span style="color: var(--danger); font-weight:600;"><i class="lucide-icon" data-lucide="x" style="width:14px; height:14px; display:inline-block; margin-right:4px;"></i>ตอบผิด</span>`;
       } else {
-        checkIconHtml = att.graded 
+        checkIconHtml = att.graded
           ? `<span style="color: var(--success); font-weight:600;"><i class="lucide-icon" data-lucide="pencil" style="width:14px; height:14px; display:inline-block; margin-right:4px;"></i>ตรวจแล้ว</span>`
           : `<span style="color: var(--warning); font-weight:600;"><i class="lucide-icon" data-lucide="clock" style="width:14px; height:14px; display:inline-block; margin-right:4px;"></i>รอตรวจ</span>`;
       }
@@ -1031,7 +1031,7 @@ async function renderTeacherSubjects(container) {
 
   let html = `
     <div class="view-title-container">
-      <h2>วิชาเรียนที่คุณครูรับผิดชอบสอน 🏫</h2>
+      <h2>วิชาเรียนที่คุณครูรับผิดชอบสอน </h2>
       <button class="btn btn-primary" id="tch-add-subject-btn">
         <i class="lucide-icon" data-lucide="plus-circle"></i>
         <span>สร้างวิชาเรียนใหม่</span>
@@ -1109,7 +1109,7 @@ function openAddSubjectModal() {
 
   document.getElementById('sub-cancel-btn').addEventListener('click', closeModal);
   const form = document.getElementById('add-subject-form');
-  
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('sub-code-input').value.trim().toUpperCase();
@@ -1155,7 +1155,7 @@ function openAddSubjectModal() {
   });
 }
 
-window.deleteSubjectByTeacher = async function(subjectId, subjectName) {
+window.deleteSubjectByTeacher = async function (subjectId, subjectName) {
   if (confirm(`คุณครูต้องการลบวิชา "${subjectName}" ใช่หรือไม่?\nการลบจะล้างข้อมูลห้องสอบ คะแนนทั้งหมดของนร. ในวิชานี้ออกถาวร!`)) {
     await window.db.deleteSubject(subjectId);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชา', `ลบวิชาเรียน "${subjectName}" (${subjectId})`);
@@ -1180,7 +1180,7 @@ async function renderTeacherExams(container) {
 
   let html = `
     <div class="view-title-container">
-      <h2>รายการเครื่องมือและคลังข้อสอบ 📝</h2>
+      <h2>รายการเครื่องมือและคลังข้อสอบ </h2>
       <button class="btn btn-primary" id="tch-create-exam-btn" ${teacherSubjects.length === 0 ? 'disabled' : ''}>
         <i class="lucide-icon" data-lucide="plus-circle"></i>
         <span>สร้างข้อสอบชุดใหม่</span>
@@ -1256,7 +1256,7 @@ async function toggleExamStatus(examId, currentStatus) {
   await switchView('teacher_exams');
 }
 
-window.deleteExamByTeacher = async function(examId, examTitle) {
+window.deleteExamByTeacher = async function (examId, examTitle) {
   if (confirm(`คุณครูต้องการลบชุดข้อสอบ "${examTitle}" ใช่หรือไม่?\nข้อมูลการส่งสอบและคะแนนทั้งหมดของนร.จะสูญหายถาวร!`)) {
     await window.db.deleteExam(examId);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบข้อสอบ', `ลบข้อสอบชุด "${examTitle}" (${examId})`);
@@ -1360,7 +1360,7 @@ async function openCreateExamView() {
   const form = document.getElementById('builder-main-form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     // โหลดเก็บค่าจากฟอร์มคำถามใน HTML
     saveBuilderFormValuesToMemory();
 
@@ -1402,7 +1402,7 @@ async function renderBuilderQuestions() {
 
   tempQuestionsList.forEach((q, idx) => {
     const isChoice = q.type === 'choice';
-    
+
     html += `
       <div class="question-item" data-id="${q.id}">
         <div class="question-header">
@@ -1453,32 +1453,32 @@ async function renderBuilderQuestions() {
   refreshIcons(container);
 }
 
-window.addNewBuilderQuestion = function(type) {
+window.addNewBuilderQuestion = function (type) {
   saveBuilderFormValuesToMemory(); // เก็บค่าข้อมูลเก่าไว้ก่อน
-  
+
   const id = 'temp_q_' + Date.now() + '_' + Math.floor(Math.random() * 100);
-  const newQ = type === 'choice' 
+  const newQ = type === 'choice'
     ? {
-        id,
-        type: 'choice',
-        text: '',
-        points: 2,
-        options: ['', '', '', ''],
-        correctAnswer: 0
-      }
+      id,
+      type: 'choice',
+      text: '',
+      points: 2,
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    }
     : {
-        id,
-        type: 'subjective',
-        text: '',
-        points: 4,
-        correctAnswer: ''
-      };
+      id,
+      type: 'subjective',
+      text: '',
+      points: 4,
+      correctAnswer: ''
+    };
 
   tempQuestionsList.push(newQ);
   renderBuilderQuestions();
 };
 
-window.removeBuilderQuestion = function(id) {
+window.removeBuilderQuestion = function (id) {
   if (tempQuestionsList.length <= 1) {
     alert('จำเป็นต้องมีโจทย์คำถามสอบเหลือไว้อย่างน้อย 1 ข้อขึ้นไป');
     return;
@@ -1537,13 +1537,13 @@ async function renderTeacherGrading(container) {
   const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
   const exams = await window.db.getExams();
   const teacherExams = exams.filter(ex => teacherSubjects.some(s => s.id === ex.subjectId));
-  
+
   const attempts = await window.db.getAttempts();
   const submissions = attempts.filter(att => teacherExams.some(ex => ex.id === att.examId));
 
   let html = `
     <div class="view-title-container">
-      <h2>ตรวจข้อสอบและวิเคราะห์รายแผ่น 💯</h2>
+      <h2>ตรวจข้อสอบและวิเคราะห์รายแผ่น </h2>
     </div>
   `;
 
@@ -1575,7 +1575,7 @@ async function renderTeacherGrading(container) {
     submissions.forEach(att => {
       let cheatStyle = 'color: var(--success); font-weight:600;';
       let cheatText = 'ปกติ';
-      
+
       if (att.status === 'cheated') {
         cheatStyle = 'color: var(--danger); font-weight:600;';
         cheatText = `ทุจริต (หลุดจอ ${att.exitCount} ครั้ง)`;
@@ -1620,7 +1620,7 @@ async function renderTeacherGrading(container) {
   refreshIcons(container);
 }
 
-window.openTeacherGradeOverlay = async function(attemptId) {
+window.openTeacherGradeOverlay = async function (attemptId) {
   const att = await window.db.getAttempt(attemptId);
   if (!att) return;
 
@@ -1736,7 +1736,7 @@ window.openTeacherGradeOverlay = async function(attemptId) {
 
     await window.db.updateAttemptGrading(attemptId, { finalScore }, comment);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ตรวจคะแนน', `ครูส่งคะแนนตรวจ "${att.examTitle}" ของ ${att.studentName} คะแนนรวม ${finalScore} คะแนน`);
-    
+
     alert(`ประเมินและให้คะแนน "${att.studentName}" สำเร็จ!`);
     closeModal();
     await switchView('teacher_grading');
@@ -1748,7 +1748,7 @@ window.openTeacherGradeOverlay = async function(attemptId) {
 // -------------------------------------------------------------
 async function renderTeacherReports(container) {
   const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
-  
+
   let optionsHtml = '';
   teacherSubjects.forEach(s => {
     optionsHtml += `<option value="${s.id}">${s.name}</option>`;
@@ -1756,7 +1756,7 @@ async function renderTeacherReports(container) {
 
   container.innerHTML = `
     <div class="view-title-container">
-      <h2>รายงานสถิติวิเคราะห์และดาวน์โหลดผล 📊</h2>
+      <h2>รายงานสถิติวิเคราะห์และดาวน์โหลดผล </h2>
       ${teacherSubjects.length > 0 ? `
         <button class="btn btn-success" id="report-csv-download">
           <i class="lucide-icon" data-lucide="download"></i>
@@ -1788,7 +1788,7 @@ async function renderTeacherReports(container) {
   if (teacherSubjects.length > 0) {
     const sel = document.getElementById('report-subject-selector');
     sel.addEventListener('change', () => updateTeacherReportsDashboard(sel.value));
-    
+
     // โหลดครั้งแรก
     updateTeacherReportsDashboard(sel.value);
 
@@ -1824,11 +1824,11 @@ async function updateTeacherReportsDashboard(subjectId) {
   attempts.forEach(a => {
     sumScore += a.score;
     if (a.score > maxScore) maxScore = a.score;
-    
+
     // คิดสอบผ่านที่ 50% ขึ้นไป
     const percent = (a.score / a.totalPoints) * 100;
     if (percent >= 50) passCount++;
-    
+
     cheatCountTotal += a.exitCount;
   });
 
@@ -1976,10 +1976,10 @@ async function updateTeacherReportsDashboard(subjectId) {
           </thead>
           <tbody>
             ${attempts.map(att => {
-              const min = Math.floor(att.timeSpent / 60);
-              const sec = att.timeSpent % 60;
-              const percent = (att.score / att.totalPoints) * 100;
-              return `
+    const min = Math.floor(att.timeSpent / 60);
+    const sec = att.timeSpent % 60;
+    const percent = (att.score / att.totalPoints) * 100;
+    return `
                 <tr>
                   <td><strong>${att.studentName}</strong></td>
                   <td>${att.examTitle}</td>
@@ -1995,7 +1995,7 @@ async function updateTeacherReportsDashboard(subjectId) {
                   </td>
                 </tr>
               `;
-            }).join('')}
+  }).join('')}
           </tbody>
         </table>
       </div>
@@ -2024,7 +2024,7 @@ async function downloadGradebookCSV(subjectId) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
-  link.setAttribute("download", `gradebook_${subject.id}_${new Date().toISOString().slice(0,10)}.csv`);
+  link.setAttribute("download", `gradebook_${subject.id}_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -2038,7 +2038,7 @@ async function renderAdminUsers(container) {
 
   container.innerHTML = `
     <div class="view-title-container">
-      <h2>จัดการรายชื่อผู้ใช้เข้าระบบทั้งหมด 👥</h2>
+      <h2>จัดการรายชื่อผู้ใช้เข้าระบบทั้งหมด </h2>
       <button class="btn btn-primary" id="admin-create-user-btn">
         <i class="lucide-icon" data-lucide="plus-circle"></i>
         <span>สร้างผู้ใช้งานระบบใหม่</span>
@@ -2082,8 +2082,8 @@ async function renderAdminUsers(container) {
 async function renderAdminUsersTable(filterText) {
   const body = document.getElementById('admin-users-table-body');
   const users = await window.db.getUsers();
-  
-  const filtered = users.filter(u => 
+
+  const filtered = users.filter(u =>
     u.username.toLowerCase().includes(filterText) ||
     u.name.toLowerCase().includes(filterText)
   );
@@ -2119,12 +2119,12 @@ async function renderAdminUsersTable(filterText) {
   refreshIcons(body);
 }
 
-window.toggleUserStatus = async function(userId, currentStatus) {
+window.toggleUserStatus = async function (userId, currentStatus) {
   await window.db.updateUser(userId, { active: !currentStatus });
   renderAdminUsersTable(document.getElementById('admin-user-search-input').value.trim().toLowerCase());
 };
 
-window.deleteUserByAdmin = async function(userId, username) {
+window.deleteUserByAdmin = async function (userId, username) {
   if (confirm(`คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้ "${username}" ใช่หรือไม่?\nข้อมูลการเรียน คอร์ส และผลการสอบทั้งหมดของนักเรียนจะหายไปด้วย!`)) {
     await window.db.deleteUser(userId);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบผู้ใช้', `แอดมินลบบัญชีผู้ใช้ "${username}" (${userId})`);
@@ -2177,7 +2177,7 @@ function openAdminCreateUserModal() {
 
     // เช็ค ID ซ้ำ
     const users = await window.db.getUsers();
-      const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
     if (exists) {
       alert('ชื่อ Username นี้ถูกใช้งานแล้ว โปรดเลือกตัวตนไอดีใหม่');
       return;
@@ -2197,7 +2197,7 @@ function openAdminCreateUserModal() {
   });
 }
 
-window.openAdminEditUserModal = async function(userId) {
+window.openAdminEditUserModal = async function (userId) {
   const u = await window.db.getUser(userId);
   if (!u) return;
 
@@ -2235,7 +2235,7 @@ window.openAdminEditUserModal = async function(userId) {
 
     await window.db.updateUser(userId, { name, password });
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}"`);
-    
+
     alert('บันทึกการแก้ไขข้อมูลผู้เรียนเสร็จสิ้น!');
     closeModal();
     renderAdminUsers(document.getElementById('main-content-view'));
@@ -2277,7 +2277,7 @@ async function renderAdminSubjects(container) {
 
   container.innerHTML = `
     <div class="view-title-container">
-      <h2>จัดการรายวิชาสอบทั้งหมดขององค์กร 📁</h2>
+      <h2>จัดการรายวิชาสอบทั้งหมดขององค์กร </h2>
     </div>
 
     <div class="data-table-container glass-panel">
@@ -2301,7 +2301,7 @@ async function renderAdminSubjects(container) {
   refreshIcons(container);
 }
 
-window.deleteSubjectByAdmin = async function(subjectId, subjectName) {
+window.deleteSubjectByAdmin = async function (subjectId, subjectName) {
   if (confirm(`ผู้ดูแลระบบต้องการลบวิชา "${subjectName}" ใช่หรือไม่?\nการลบจะล้างข้อมูลวิชา ข้อสอบ และคะแนนของนร. ออกทั้งหมดและไม่สามารถกู้คืนได้!`)) {
     await window.db.deleteSubject(subjectId);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชาโดยแอดมิน', `แอดมินลบรายวิชา "${subjectName}" (${subjectId})`);
@@ -2318,7 +2318,7 @@ async function renderAdminLogs(container) {
 
   container.innerHTML = `
     <div class="view-title-container">
-      <h2>บันทึกระบบและความประพฤติผู้ใช้ (Audit Logs) 📑</h2>
+      <h2>บันทึกระบบและความประพฤติผู้ใช้ (Audit Logs) </h2>
     </div>
 
     <div class="data-table-container glass-panel">
@@ -2333,7 +2333,7 @@ async function renderAdminLogs(container) {
         </thead>
         <tbody>
           ${logs.map(l => {
-            return `
+    return `
               <tr>
                 <td><small>${new Date(l.timestamp).toLocaleString('th-TH')}</small></td>
                 <td>
@@ -2344,7 +2344,7 @@ async function renderAdminLogs(container) {
                 <td><span class="log-row-details">${l.details}</span></td>
               </tr>
             `;
-          }).join('')}
+  }).join('')}
         </tbody>
       </table>
     </div>
@@ -2357,7 +2357,7 @@ async function renderAdminLogs(container) {
 async function renderAdminBackup(container) {
   container.innerHTML = `
     <div class="view-title-container">
-      <h2>ระบบสำรองและนำเข้ากู้ข้อมูลจำลอง (Backup & Restore) ⚙️</h2>
+      <h2>ระบบสำรองและนำเข้ากู้ข้อมูลจำลอง (Backup & Restore) </h2>
     </div>
 
     <div class="dashboard-grid">
@@ -2403,7 +2403,7 @@ async function renderAdminBackup(container) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `exam_system_backup_${new Date().toISOString().slice(0,10)}.json`);
+    link.setAttribute("download", `exam_system_backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2438,14 +2438,14 @@ async function renderAdminBackup(container) {
 // -------------------------------------------------------------
 // 18. ระบบสอบและการป้องกันการทุจริตแบบเรียลไทม์ (Exam Engine)
 // -------------------------------------------------------------
-window.initiateExam = async function(examId) {
+window.initiateExam = async function (examId) {
   const exam = await window.db.getExam(examId);
   if (!exam) return;
 
   if (confirm(`คุณต้องการเริ่มทำข้อสอบออนไลน์ในชุด "${exam.title}" หรือไม่?\n\n** ข้อบังคับและระเบียบความปลอดภัย **\n1. ระบบจะบังคับล็อคหน้าจอของท่านให้อยู่ในโหมดเต็มหน้าจอ (Fullscreen)\n2. ห้ามสลับแท็บ ย่อบราวเซอร์ หรือเปิดแอปฯ อื่นโดยเด็ดขาด\n3. อนุญาตให้ออกนอกหน้าจอได้ไม่เกิน 2 ครั้ง ครั้งที่ 3 ระบบจะทำการระงับและส่งกระดาษคำตอบทันที!`)) {
     // เซ็ตสถานะการสอบ
     activeExam = exam;
-    
+
     // รีเซ็ตตัวแปรเซสชันทำข้อสอบ
     examSession = {
       answers: {},
@@ -2473,7 +2473,7 @@ window.initiateExam = async function(examId) {
 
     // เริ่มระบบตั้งนาฬิกาถอยหลังและตรวจจับทุจริต
     startExamTimer();
-    
+
     // หน่วงเวลาเล็กน้อยให้เบราว์เซอร์เข้าสู่โหมด Fullscreen ให้เสร็จก่อน 
     // เพื่อป้องกันบั๊กที่ทำให้ระบบมองว่าสลับจอตอนเข้าครั้งแรก
     setTimeout(() => {
@@ -2519,7 +2519,7 @@ function startExamTimer() {
     }
 
     examSession.secondsLeft--;
-    
+
     // ตั้งค่าเตือนกระพริบหากเวลาเหลือน้อยกว่า 1 นาที (60 วินาที)
     if (examSession.secondsLeft < 60) {
       timerWidget.classList.add('timer-low');
@@ -2546,7 +2546,7 @@ async function renderExamQuestionsNavigationGrid() {
   activeExam.questions.forEach((q, idx) => {
     const isAnswered = examSession.answers[q.id] !== undefined && examSession.answers[q.id] !== '';
     let btnClass = 'question-nav-btn';
-    
+
     if (idx === examSession.currentQuestionIndex) btnClass += ' active';
     else if (isAnswered) btnClass += ' answered';
 
@@ -2558,7 +2558,7 @@ async function renderExamQuestionsNavigationGrid() {
 
 async function renderExamQuestion(index) {
   examSession.currentQuestionIndex = index;
-  
+
   // นำทางปุ่มวิทยานิพนธ์ข้างล่างซิงค์
   document.getElementById('exam-current-index-num').innerText = index + 1;
   document.getElementById('exam-total-index-num').innerText = activeExam.questions.length;
@@ -2598,7 +2598,7 @@ async function renderExamQuestion(index) {
 
   // ควบคุมปุ่ม ก่อนหน้า / ถัดไป
   document.getElementById('exam-prev-btn').disabled = index === 0;
-  
+
   const nextBtn = document.getElementById('exam-next-btn');
   if (index === activeExam.questions.length - 1) {
     nextBtn.innerHTML = `<span>ส่งกระดาษคำตอบ</span> <i class="lucide-icon" data-lucide="send"></i>`;
@@ -2607,14 +2607,14 @@ async function renderExamQuestion(index) {
   }
 
   refreshIcons(document.getElementById('current-question-box'));
-  
+
   // ซิงค์สเกลข้างปุ่ม
   renderExamQuestionsNavigationGrid();
 }
 
-window.saveStudentAnswerMemory = function(questionId, value) {
+window.saveStudentAnswerMemory = function (questionId, value) {
   examSession.answers[questionId] = value;
-  
+
   // ไฮไลต์กรอบในกรณีข้อช้อยส์เพื่อ UX พรีเมียม
   const options = document.querySelectorAll('.exam-choice-option');
   options.forEach(opt => {
@@ -2653,7 +2653,7 @@ function bindExamEvents() {
   document.getElementById('resume-exam-btn').addEventListener('click', () => {
     document.getElementById('anti-cheat-warning-overlay').style.display = 'none';
     enterFullscreenMode();
-    
+
     // หน่วงเวลาก่อนเริ่มจับทุจริตใหม่หลังกลับสู่ Fullscreen
     setTimeout(() => {
       if (activeExam) enableAntiCheatDetectors();
@@ -2699,7 +2699,7 @@ async function submitExamSheetDirectly(status) {
   activeExam.questions.forEach(q => {
     totalPoints += q.points;
     const ans = examSession.answers[q.id];
-    
+
     if (q.type === 'choice') {
       if (parseInt(ans) === q.correctAnswer) {
         finalScore += q.points;
@@ -2729,7 +2729,7 @@ async function submitExamSheetDirectly(status) {
 
   // ล้างการสกรีนคุม
   if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {});
+    document.exitFullscreen().catch(() => { });
   }
 
   cleanupExamSession();
@@ -2779,7 +2779,7 @@ function handleAntiCheatInfraction() {
   examSession.cheatCount++;
   const timestamp = new Date().toLocaleTimeString('th-TH');
   examSession.cheatingLogs.push(`ตรวจพบการสลับหน้าต่าง ณ เวลา ${timestamp}`);
-  
+
   // อัปเดตสถิติตัวนับบนหน้าจอสอบ
   document.getElementById('exam-cheat-count').innerText = examSession.cheatCount;
 
@@ -2802,7 +2802,7 @@ function handleAntiCheatInfraction() {
 function playBeepWarningSound() {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
+
     // สร้าง 2 Oscillator (เสียงสองความถี่ซ้อนขัดความหูเพื่อให้รู้สึกเตือนภัย)
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
@@ -2838,7 +2838,7 @@ function openModal(title, bodyHtml) {
   document.getElementById('modal-title-text').innerText = title;
   document.getElementById('modal-body-content').innerHTML = bodyHtml;
   document.getElementById('global-modal-overlay').style.display = 'flex';
-  
+
   // ผูกตัวกระตุ้นปิด Modal
   document.getElementById('modal-close-trigger').addEventListener('click', closeModal);
 }
