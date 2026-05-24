@@ -1133,17 +1133,25 @@ function openAddSubjectModal() {
       return;
     }
 
-    await window.db.addSubject({
-      id,
-      name,
-      description,
-      teacherId: currentUser.id
-    });
+    try {
+      const created = await window.db.addSubject({
+        id,
+        name,
+        description,
+        teacherId: currentUser.id
+      });
+      if (!created) {
+        alert('ไม่สามารถสร้างวิชาได้ กรุณาลองใหม่อีกครั้ง');
+        return;
+      }
 
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างวิชา', `สร้างรายวิชาใหม่ "${name}" (รหัส: ${id})`);
-    alert(`สร้างรายวิชา "${name}" สำเร็จ นักเรียนสามารถใช้รหัส: "${id}" เพื่อเข้าร่วมห้องเรียนนี้ได้ทันที`);
-    closeModal();
-    await switchView('teacher_subjects');
+      await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างวิชา', `สร้างรายวิชาใหม่ "${name}" (รหัส: ${id})`);
+      alert(`สร้างรายวิชา "${name}" สำเร็จ นักเรียนสามารถใช้รหัส: "${id}" เพื่อเข้าร่วมห้องเรียนนี้ได้ทันที`);
+      closeModal();
+      await switchView('teacher_subjects');
+    } catch (err) {
+      alert('เกิดข้อผิดพลาด: ' + (err.message || err));
+    }
   });
 }
 

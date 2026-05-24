@@ -18,6 +18,16 @@ function mapRows(rows) {
   return Array.isArray(rows) ? rows.map(normalizeRow) : [];
 }
 
+function toSnakeRow(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const snake = key.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());
+    out[snake] = value;
+  }
+  return out;
+}
+
 class SupabaseDatabase {
   constructor() {
     console.log('Supabase Database Engine Initialized.');
@@ -80,7 +90,7 @@ class SupabaseDatabase {
   }
 
   async updateUser(userId, updatedData) {
-    const { data, error } = await supabaseClient.from('users').update(updatedData).eq('id', userId).select().single();
+    const { data, error } = await supabaseClient.from('users').update(toSnakeRow(updatedData)).eq('id', userId).select().single();
     if (error) { console.error('updateUser error:', error); return null; }
     return data ? normalizeRow(data) : null;
   }
@@ -111,8 +121,9 @@ class SupabaseDatabase {
   }
 
   async addSubject(subject) {
-    const { data, error } = await supabaseClient.from('subjects').insert([subject]).select().single();
-    if (error) { console.error('addSubject error:', error); return null; }
+    const row = toSnakeRow(subject);
+    const { data, error } = await supabaseClient.from('subjects').insert([row]).select().single();
+    if (error) { console.error('addSubject error:', error); throw error; }
     return data ? normalizeRow(data) : null;
   }
 
@@ -203,14 +214,14 @@ class SupabaseDatabase {
 
   async addExam(examData) {
     const id = 'exm_' + Date.now();
-    const newExam = { id, active: true, questions: [], ...examData };
+    const newExam = toSnakeRow({ id, active: true, questions: [], ...examData });
     const { data, error } = await supabaseClient.from('exams').insert([newExam]).select().single();
-    if (error) { console.error('addExam error:', error); return null; }
+    if (error) { console.error('addExam error:', error); throw error; }
     return data ? normalizeRow(data) : null;
   }
 
   async updateExam(examId, examData) {
-    const { data, error } = await supabaseClient.from('exams').update(examData).eq('id', examId).select().single();
+    const { data, error } = await supabaseClient.from('exams').update(toSnakeRow(examData)).eq('id', examId).select().single();
     if (error) { console.error('updateExam error:', error); return null; }
     return data ? normalizeRow(data) : null;
   }
@@ -248,32 +259,32 @@ class SupabaseDatabase {
 
   async addAttempt(attemptData) {
     const id = 'att_' + Date.now();
-    const newAttempt = {
-      id,
-      submitted_at: new Date().toISOString(),
-      comments: '',
-      graded: true,
-      ...attemptData
-    };
+    const examId = attemptData.examId || attemptData.exam_id;
+    let graded = true;
 
-    // ตรวจสอบข้อเขียน
-    const exam = await this.getExam(newAttempt.exam_id);
+    const exam = await this.getExam(examId);
     if (exam && exam.questions) {
       const hasSubjective = exam.questions.some(q => q.type === 'subjective');
-      if (hasSubjective) {
-        newAttempt.graded = false;
-      }
+      if (hasSubjective) graded = false;
     }
+
+    const newAttempt = toSnakeRow({
+      id,
+      submittedAt: new Date().toISOString(),
+      comments: '',
+      graded,
+      ...attemptData
+    });
 
     const { data, error } = await supabaseClient.from('attempts').insert([newAttempt]).select().single();
     if (error) { console.error('addAttempt error:', error); throw error; }
 
     await this.addLog(
-      newAttempt.student_id,
-      newAttempt.student_name,
+      attemptData.studentId,
+      attemptData.studentName,
       'student',
       'ส่งข้อสอบ',
-      `ส่งกระดาษคำตอบวิชา ${newAttempt.exam_title} สถานะ: ${newAttempt.status === 'cheated' ? 'ส่งด่วนเนื่องจากทุจริต' : 'เสร็จสมบูรณ์'}, คะแนนดิบ: ${newAttempt.score} คะแนน`
+      `ส่งกระดาษคำตอบวิชา ${attemptData.examTitle} สถานะ: ${attemptData.status === 'cheated' ? 'ส่งด่วนเนื่องจากทุจริต' : 'เสร็จสมบูรณ์'}, คะแนนดิบ: ${attemptData.score} คะแนน`
     );
 
     return normalizeRow(data);
