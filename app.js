@@ -26,7 +26,7 @@ let examSession = {
 // -------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   // สลับธีมเดิมจากหน่วยความจำถ้ามี
-  const savedTheme = localStorage.getItem('theme') || 'dark-theme';
+  const savedTheme = localStorage.getItem('theme') || 'light-theme';
   let initialTheme = savedTheme;
   if (initialTheme === 'dark') initialTheme = 'dark-theme';
   if (initialTheme === 'light') initialTheme = 'light-theme';
