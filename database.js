@@ -333,6 +333,83 @@ class SupabaseDatabase {
 
     return newLog;
   }
+
+  // -------------------------------------------------------------
+  // หมวดหมู่สำรองและกู้คืนข้อมูล (Backup & Restore API)
+  // -------------------------------------------------------------
+  async exportBackup() {
+    try {
+      const [users, subjects, enrollments, exams, attempts, auditLogs] = await Promise.all([
+        supabaseClient.from('users').select('*'),
+        supabaseClient.from('subjects').select('*'),
+        supabaseClient.from('enrollments').select('*'),
+        supabaseClient.from('exams').select('*'),
+        supabaseClient.from('attempts').select('*'),
+        supabaseClient.from('audit_logs').select('*')
+      ]);
+
+      const backup = {
+        users: users.data || [],
+        subjects: subjects.data || [],
+        enrollments: enrollments.data || [],
+        exams: exams.data || [],
+        attempts: attempts.data || [],
+        audit_logs: auditLogs.data || []
+      };
+
+      return JSON.stringify(backup, null, 2);
+    } catch (error) {
+      console.error('exportBackup error:', error);
+      throw error;
+    }
+  }
+
+  async importBackup(content) {
+    try {
+      const backup = JSON.parse(content);
+      const tables = ['users', 'subjects', 'exams', 'enrollments', 'attempts', 'audit_logs'];
+
+      for (const table of tables) {
+        if (!Array.isArray(backup[table])) {
+          console.error(`Import validation error: Table ${table} is not an array`);
+          return false;
+        }
+      }
+
+      // Clear tables in reverse order of dependencies
+      const reverseTables = [...tables].reverse();
+      for (const table of reverseTables) {
+        console.log(`Clearing table ${table}...`);
+        const { error: delError } = await supabaseClient.from(table).delete().neq('id', '_non_existent_id_');
+        if (delError) {
+          console.error(`Error clearing table ${table}:`, delError);
+          throw delError;
+        }
+      }
+
+      // Insert new rows
+      for (const table of tables) {
+        const rows = backup[table];
+        if (rows.length === 0) continue;
+        console.log(`Restoring ${rows.length} rows to ${table}...`);
+        
+        const chunkSize = 100;
+        for (let i = 0; i < rows.length; i += chunkSize) {
+          const chunk = rows.slice(i, i + chunkSize);
+          const { error: insError } = await supabaseClient.from(table).insert(chunk);
+          if (insError) {
+            console.error(`Error inserting chunk to table ${table}:`, insError);
+            throw insError;
+          }
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('importBackup error:', error);
+      return false;
+    }
+  }
 }
 
 // ส่งออกอ็อบเจกต์ db ไปใช้ในระบบ

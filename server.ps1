@@ -2,7 +2,7 @@ $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://*:8080/")
 $listener.Start()
 
-$basePath = "c:\Users\Administrator\Desktop\Mobile_App"
+$basePath = $PSScriptRoot
 $watchExts = @(".html", ".css", ".js", ".json")
 
 # Calculate initial hash of all watched files
