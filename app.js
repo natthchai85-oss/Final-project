@@ -1326,7 +1326,10 @@ async function openCreateExamView() {
         <div style="border-top:1px solid var(--border-glass); padding-top:24px; margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
             <h3 style="font-size:16px; font-weight:600;"><i class="lucide-icon" data-lucide="help-circle" style="vertical-align:middle; margin-right:8px;"></i>รายการคำถามที่สร้างขึ้น</h3>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button type="button" class="btn btn-primary" id="import-gform-btn" style="padding:6px 12px; font-size:12px; background-color:#673ab7; border-color:#673ab7;">
+                <i class="lucide-icon" data-lucide="file-text"></i> นำเข้าจาก Google Form
+              </button>
               <button type="button" class="btn btn-secondary" onclick="addNewBuilderQuestion('choice')" style="padding:6px 12px; font-size:12px;">
                 <i class="lucide-icon" data-lucide="plus"></i> ปรนัย (หลายตัวเลือก)
               </button>
@@ -1351,6 +1354,11 @@ async function openCreateExamView() {
 
   renderBuilderQuestions();
   refreshIcons(contentArea);
+
+  const importGFormBtn = document.getElementById('import-gform-btn');
+  if (importGFormBtn) {
+    importGFormBtn.addEventListener('click', openImportGoogleFormModal);
+  }
 
   const goBackToExams = () => { switchView('teacher_exams'); };
   document.getElementById('builder-back-btn').addEventListener('click', goBackToExams);
@@ -2829,6 +2837,255 @@ function playBeepWarningSound() {
   } catch (err) {
     console.warn("ไม่สามารถส่งสัญญาณเสียงบี๊บเตือน (ติด Autoplay block):", err);
   }
+}
+
+// -------------------------------------------------------------
+// 19. ระบบนำเข้าข้อสอบจาก Google Form (Google Form Importer Logic)
+// -------------------------------------------------------------
+function parseGoogleFormHtml(html) {
+  const regex = /FB_PUBLIC_LOAD_DATA_\s*=\s*(\[[\s\S]*?\])\s*;/;
+  const match = regex.exec(html);
+  if (!match) {
+    throw new Error('ไม่พบโครงสร้างข้อมูลข้อสอบ (FB_PUBLIC_LOAD_DATA_) ใน HTML นี้ กรุณาตรวจสอบว่าเป็นซอร์สโค้ดหน้า Google Form ที่ถูกต้อง');
+  }
+  
+  let data;
+  try {
+    data = JSON.parse(match[1]);
+  } catch (err) {
+    throw new Error('ไม่สามารถวิเคราะห์ข้อมูลแบบฟอร์มได้ กรุณาลองใหม่อีกครั้ง');
+  }
+
+  const items = data[1] && data[1][1];
+  if (!Array.isArray(items)) {
+    throw new Error('ไม่พบรายการคำถามในแบบฟอร์มนี้');
+  }
+
+  const questions = [];
+  let counter = 0;
+
+  for (const item of items) {
+    const questionText = item[1];
+    const typeId = item[3];
+    
+    if (!questionText || typeId === undefined) continue;
+
+    // ข้ามประเภทที่ไม่ใช่คำถามสอบ เช่น ส่วนแยกหน้า (Section Header), วิดีโอ, ภาพประกอบ
+    if (typeId === 9 || typeId === 10 || typeId === 6 || typeId === 8) {
+      continue;
+    }
+
+    counter++;
+    const qId = 'gform_q_' + Date.now() + '_' + counter;
+
+    if (typeId === 3 || typeId === 4 || typeId === 5) {
+      // ตัวเลือก (ปรนัย)
+      const optionsContainer = item[4] && item[4][0];
+      const rawOptions = optionsContainer && optionsContainer[1];
+      const options = [];
+      if (Array.isArray(rawOptions)) {
+        for (const opt of rawOptions) {
+          if (opt && opt[0] !== undefined && opt[0] !== null) {
+            options.push(String(opt[0]));
+          }
+        }
+      }
+
+      if (options.length > 0) {
+        questions.push({
+          id: qId,
+          type: 'choice',
+          text: questionText,
+          points: 2, // กำหนดคะแนนเริ่มต้น
+          options: options,
+          correctAnswer: 0 // ดัชนีเฉลยเริ่มต้น (ตัวเลือกแรก) ครูแก้ไขทีหลังได้
+        });
+      }
+    } else {
+      // เขียนตอบ (อัตนัย)
+      questions.push({
+        id: qId,
+        type: 'subjective',
+        text: questionText,
+        points: 4, // กำหนดคะแนนเริ่มต้น
+        correctAnswer: '' // ครูตั้งค่าคำเฉลยเพิ่มทีหลัง
+      });
+    }
+  }
+
+  return questions;
+}
+
+function openImportGoogleFormModal() {
+  const modalHtml = `
+    <div class="gform-import-modal-body" style="color: var(--text-primary); font-family: inherit;">
+      <div style="margin-bottom: 16px;">
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; text-align: left;">
+          นำเข้าคำถามจาก Google Form โดยระบบจะดึงคำถามและตัวเลือกทั้งหมดมาแปลงเป็นข้อสอบในระบบนี้โดยอัตโนมัติ
+        </p>
+      </div>
+      
+      <!-- แท็บระบุช่องทางนำเข้า -->
+      <div class="form-group" style="margin-bottom: 20px; text-align: left;">
+        <label class="form-label" style="font-weight:600;">เลือกวิธีนำเข้า</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+          <button type="button" class="btn btn-primary" id="gform-tab-url" style="padding: 8px; font-size:12.5px;">
+            <i class="lucide-icon" data-lucide="link" style="vertical-align:middle; margin-right:4px;"></i>นำเข้าผ่าน URL ลิงก์
+          </button>
+          <button type="button" class="btn btn-secondary" id="gform-tab-html" style="padding: 8px; font-size:12.5px;">
+            <i class="lucide-icon" data-lucide="code" style="vertical-align:middle; margin-right:4px;"></i>วางโค้ด HTML (หน้าซอร์ส)
+          </button>
+        </div>
+      </div>
+
+      <!-- ส่วนป้อน URL -->
+      <div id="gform-url-section" class="form-group" style="text-align: left;">
+        <label for="gform-url-input" class="form-label">ลิงก์ Google Form (หน้าเว็บที่ใช้ทำข้อสอบ)</label>
+        <input type="url" id="gform-url-input" class="form-control" placeholder="https://docs.google.com/forms/d/e/.../viewform" style="width: 100%;">
+        <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+          * หมายเหตุ: ต้องใช้ลิงก์ที่เป็นหน้าทำข้อสอบจริง (ลงท้ายด้วย <code>/viewform</code>) เท่านั้น
+        </p>
+      </div>
+
+      <!-- ส่วนป้อน HTML -->
+      <div id="gform-html-section" class="form-group" style="display: none; text-align: left;">
+        <label for="gform-html-input" class="form-label">ซอร์สโค้ด HTML ของ Google Form</label>
+        <textarea id="gform-html-input" class="form-control" placeholder="วางซอร์สโค้ด HTML ที่คัดลอกมาที่นี่..." style="min-height: 120px; font-family: monospace; font-size: 11px;"></textarea>
+        <div style="background-color: rgba(99, 102, 241, 0.05); padding: 12px; border-radius: var(--radius-sm); margin-top: 10px; border: 1px solid rgba(99, 102, 241, 0.1);">
+          <h4 style="font-size:12px; font-weight:600; margin-bottom:4px; color: var(--primary);">วิธีคัดลอกโค้ด HTML:</h4>
+          <ol style="font-size: 11px; color: var(--text-secondary); padding-left: 18px; margin-bottom: 0; line-height: 1.5;">
+            <li>เปิดลิงก์ Google Form ในบราวเซอร์</li>
+            <li>กดปุ่ม <code>Ctrl + U</code> (หรือคลิกขวาแล้วเลือก "ดูซอร์สโค้ดของหน้า" / "View Page Source")</li>
+            <li>กด <code>Ctrl + A</code> เพื่อเลือกโค้ดทั้งหมด และกด <code>Ctrl + C</code> เพื่อคัดลอก</li>
+            <li>นำมาวางลงในช่องข้อความด้านบนนี้</li>
+          </ol>
+        </div>
+      </div>
+
+      <div id="gform-import-loading" style="display: none; align-items: center; justify-content: center; gap: 8px; margin: 16px 0; color: var(--primary); font-size: 13px;">
+        <i class="lucide-icon spin-animation" data-lucide="loader" style="width:16px; height:16px;"></i> <span>กำลังดึงข้อมูลและแปลงข้อสอบ กรุณารอสักครู่...</span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="gform-cancel-btn">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" id="gform-submit-btn" style="background-color:#673ab7; border-color:#673ab7;">นำเข้าข้อสอบ</button>
+      </div>
+    </div>
+  `;
+
+  openModal('นำเข้าข้อสอบจาก Google Form', modalHtml);
+  refreshIcons(document.getElementById('modal-body-content'));
+
+  const tabUrl = document.getElementById('gform-tab-url');
+  const tabHtml = document.getElementById('gform-tab-html');
+  const secUrl = document.getElementById('gform-url-section');
+  const secHtml = document.getElementById('gform-html-section');
+  const cancelBtn = document.getElementById('gform-cancel-btn');
+  const submitBtn = document.getElementById('gform-submit-btn');
+  const loadingDiv = document.getElementById('gform-import-loading');
+
+  let currentMethod = 'url'; // 'url' or 'html'
+
+  tabUrl.addEventListener('click', () => {
+    tabUrl.classList.add('btn-primary');
+    tabUrl.classList.remove('btn-secondary');
+    tabHtml.classList.add('btn-secondary');
+    tabHtml.classList.remove('btn-primary');
+    secUrl.style.display = 'block';
+    secHtml.style.display = 'none';
+    currentMethod = 'url';
+  });
+
+  tabHtml.addEventListener('click', () => {
+    tabHtml.classList.add('btn-primary');
+    tabHtml.classList.remove('btn-secondary');
+    tabUrl.classList.add('btn-secondary');
+    tabUrl.classList.remove('btn-primary');
+    secUrl.style.display = 'none';
+    secHtml.style.display = 'block';
+    currentMethod = 'html';
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+
+  submitBtn.addEventListener('click', async () => {
+    let htmlContent = '';
+    
+    if (currentMethod === 'url') {
+      const url = document.getElementById('gform-url-input').value.trim();
+      if (!url) {
+        alert('กรุณากรอกลิงก์ Google Form');
+        return;
+      }
+      
+      if (!url.includes('docs.google.com/forms')) {
+        alert('ลิงก์ที่ระบุไม่ถูกต้อง กรุณาใช้ลิงก์จาก Google Forms เช่น https://docs.google.com/forms/d/e/.../viewform');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      loadingDiv.style.display = 'flex';
+
+      try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('ไม่สามารถดาวน์โหลดข้อมูลแบบฟอร์มได้');
+        const json = await response.json();
+        htmlContent = json.contents;
+      } catch (err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาดในการโหลดหน้าเว็บผ่าน Proxy (CORS / Network Error)\n\nแนะนำให้เลือกวิธีที่ 2 "วางโค้ด HTML" แทน เพื่อหลีกเลี่ยงข้อจำกัดการดาวน์โหลดข้อมูลครับ');
+        submitBtn.disabled = false;
+        loadingDiv.style.display = 'none';
+        return;
+      }
+    } else {
+      htmlContent = document.getElementById('gform-html-input').value.trim();
+      if (!htmlContent) {
+        alert('กรุณาวางโค้ด HTML ซอร์สโค้ดของ Google Form');
+        return;
+      }
+    }
+
+    try {
+      const parsedQuestions = parseGoogleFormHtml(htmlContent);
+      if (parsedQuestions.length === 0) {
+        alert('ไม่พบคำถามที่เหมาะสมสำหรับนำเข้าในหน้านี้ กรุณาตรวจสอบซอร์สโค้ดแบบฟอร์มอีกครั้ง');
+        submitBtn.disabled = false;
+        loadingDiv.style.display = 'none';
+        return;
+      }
+
+      saveBuilderFormValuesToMemory();
+      tempQuestionsList = tempQuestionsList.concat(parsedQuestions);
+      
+      // ดึงหัวข้อและรายละเอียดมาป้อนให้อัตโนมัติ (ถ้ามี)
+      const titleMatch = htmlContent.match(/<meta property="og:title" content="(.*?)"/);
+      if (titleMatch && titleMatch[1]) {
+        const titleInput = document.getElementById('b-title');
+        if (titleInput && !titleInput.value.trim()) {
+          titleInput.value = titleMatch[1];
+        }
+      }
+
+      const descMatch = htmlContent.match(/<meta property="og:description" content="(.*?)"/);
+      if (descMatch && descMatch[1]) {
+        const descInput = document.getElementById('b-desc');
+        if (descInput && !descInput.value.trim()) {
+          descInput.value = descMatch[1];
+        }
+      }
+
+      renderBuilderQuestions();
+      refreshIcons(document.getElementById('main-content-view'));
+      
+      closeModal();
+      alert(`นำเข้าคำถามสำเร็จทั้งหมด ${parsedQuestions.length} ข้อ!\n\n* เพื่อความปลอดภัย Google Form จะไม่มีข้อมูลเฉลยส่งมายังหน้าเว็บสาธารณะ กรุณาตั้งค่าเฉลยที่ถูกต้องของข้อสอบประเภทปรนัย (ตัวเลือก) แต่ละข้อในโปรแกรมแก้ไขด้านล่างนี้ด้วยครับ`);
+    } catch (err) {
+      alert('เกิดข้อผิดพลาดในการแปลงข้อมูล: ' + err.message);
+      submitBtn.disabled = false;
+      loadingDiv.style.display = 'none';
+    }
+  });
 }
 
 // -------------------------------------------------------------
