@@ -2878,7 +2878,7 @@ function parseGoogleFormHtml(html) {
     counter++;
     const qId = 'gform_q_' + Date.now() + '_' + counter;
 
-    if (typeId === 3 || typeId === 4 || typeId === 5) {
+    if (typeId === 2 || typeId === 3 || typeId === 4) {
       // ตัวเลือก (ปรนัย)
       const optionsContainer = item[4] && item[4][0];
       const rawOptions = optionsContainer && optionsContainer[1];
