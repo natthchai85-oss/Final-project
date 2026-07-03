@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeSecuritySettings() {
   // 1. ป้องกันการคลิกขวา (Context Menu)
   document.addEventListener('contextmenu', (e) => {
-    if (!currentUser || currentUser.role === 'student') {
+    if (!currentUser || currentUser.role !== 'admin') {
       e.preventDefault();
       return false;
     }
@@ -76,7 +76,7 @@ function initializeSecuritySettings() {
 
   // 2. ป้องกันปุ่มลัดคีย์บอร์ด F12, Ctrl+Shift+I/C/J, Ctrl+U, Ctrl+S
   document.addEventListener('keydown', (e) => {
-    if (!currentUser || currentUser.role === 'student') {
+    if (!currentUser || currentUser.role !== 'admin') {
       const key = e.key ? e.key.toLowerCase() : '';
       const code = e.keyCode || e.which;
 
@@ -100,7 +100,7 @@ function initializeSecuritySettings() {
 
   // 3. ดีบั๊กเกอร์ลูป ป้องกันการใช้คอนโซลตรวจหาค่าตัวแปร
   setInterval(() => {
-    if (!currentUser || currentUser.role === 'student') {
+    if (!currentUser || currentUser.role !== 'admin') {
       try {
         (function() {
           return function(inst) {
