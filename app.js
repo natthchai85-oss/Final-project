@@ -3026,14 +3026,35 @@ function openImportGoogleFormModal() {
       submitBtn.disabled = true;
       loadingDiv.style.display = 'flex';
 
+      let success = false;
+
+      // 1. ลองใช้ corsproxy.io ก่อน (เร็วและเสถียรกว่า)
       try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-        if (!response.ok) throw new Error('ไม่สามารถดาวน์โหลดข้อมูลแบบฟอร์มได้');
-        const json = await response.json();
-        htmlContent = json.contents;
+        console.log('Attempting import via corsproxy.io...');
+        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error('CORSProxy.io returned non-ok status');
+        htmlContent = await response.text();
+        success = true;
       } catch (err) {
-        console.error(err);
-        alert('เกิดข้อผิดพลาดในการโหลดหน้าเว็บผ่าน Proxy (CORS / Network Error)\n\nแนะนำให้เลือกวิธีที่ 2 "วางโค้ด HTML" แทน เพื่อหลีกเลี่ยงข้อจำกัดการดาวน์โหลดข้อมูลครับ');
+        console.warn('corsproxy.io failed, trying fallback allorigins.win...', err);
+      }
+
+      // 2. ถ้าวิธีแรกไม่สำเร็จ ให้ลองใช้ allorigins.win
+      if (!success) {
+        try {
+          console.log('Attempting import via allorigins.win...');
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+          if (!response.ok) throw new Error('AllOrigins returned non-ok status');
+          const json = await response.json();
+          htmlContent = json.contents;
+          success = true;
+        } catch (err) {
+          console.warn('allorigins.win failed too', err);
+        }
+      }
+
+      if (!success) {
+        alert('เกิดข้อผิดพลาดในการโหลดหน้าเว็บผ่าน Proxy (CORS / Network Error)\n\nระบบไม่สามารถดาวน์โหลดผ่านเซิร์ฟเวอร์กลางได้เนื่องจากข้อจำกัดการเชื่อมต่ออินเทอร์เน็ต\n\nแนะนำให้เลือกวิธีที่ 2 "วางโค้ด HTML" แทน เพื่อหลีกเลี่ยงข้อจำกัดการดาวน์โหลดข้อมูลครับ');
         submitBtn.disabled = false;
         loadingDiv.style.display = 'none';
         return;
