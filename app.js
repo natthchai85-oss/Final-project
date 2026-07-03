@@ -1511,6 +1511,16 @@ async function openCreateExamView() {
           </div>
         </div>
 
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+          <div class="form-group">
+            <label for="b-gps" class="form-label">ขอบเขตสถานที่ทำข้อสอบ (GPS Location Lock)</label>
+            <select id="b-gps" class="form-control">
+              <option value="false">สอบที่ไหนก็ได้ (ไม่มีการจำกัดพื้นที่)</option>
+              <option value="true">เฉพาะภายในวิทยาลัยเทคนิคตากเท่านั้น (รัศมี 500 เมตร)</option>
+            </select>
+          </div>
+        </div>
+
         <!-- รายการคำถามคำตอบ -->
         <div style="border-top:1px solid var(--border-glass); padding-top:24px; margin-top:24px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -1566,6 +1576,7 @@ async function openCreateExamView() {
     const description = document.getElementById('b-desc').value.trim();
     const timeLimit = parseInt(document.getElementById('b-timer').value);
     const scheduledDate = document.getElementById('b-date').value;
+    const requireGps = document.getElementById('b-gps').value === 'true';
 
     if (!title || !description || isNaN(timeLimit)) {
       alert('กรุณากรอกข้อมูลส่วนหัวข้อสอบให้ครบถ้วนก่อนส่งบันทึก');
@@ -1584,6 +1595,7 @@ async function openCreateExamView() {
       description,
       timeLimit,
       scheduledDate,
+      requireGps,
       questions: tempQuestionsList
     });
 
@@ -2635,10 +2647,85 @@ async function renderAdminBackup(container) {
 // -------------------------------------------------------------
 // 18. ระบบสอบและการป้องกันการทุจริตแบบเรียลไทม์ (Exam Engine)
 // -------------------------------------------------------------
+// ฟังก์ชันคำนวณระยะห่างพิกัด GPS ด้วย Haversine Formula
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // รัศมีของโลกในหน่วยเมตร
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 window.initiateExam = async function (examId) {
   const exam = await window.db.getExam(examId);
   if (!exam) return;
 
+  // ตรวจสอบพิกัด GPS ถ้ามีการตั้งค่าบังคับพื้นที่
+  if (exam.requireGps) {
+    if (!navigator.geolocation) {
+      alert('อุปกรณ์ของคุณไม่รองรับการดึงพิกัดตำแหน่ง (GPS) ไม่สามารถสอบในรายวิชาที่บังคับพิกัดได้');
+      return;
+    }
+
+    openModal('ตรวจสอบพิกัดสถานที่เข้าสอบ', `
+      <div style="text-align: center; color: var(--text-primary); padding: 20px 0; font-family: inherit;">
+        <div class="spin-animation" style="width: 45px; height: 45px; border: 4px solid var(--primary); border-top-color: transparent; border-radius: 50%; margin: 0 auto 16px;"></div>
+        <p style="font-weight: 600; margin-bottom: 8px;">กำลังตรวจหาพิกัดตำแหน่งของคุณ...</p>
+        <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5;">
+          กรุณากดปุ่ม <strong>"อนุญาต" (Allow)</strong> สิทธิ์การเข้าถึงตำแหน่งพิกัด เพื่อให้ระบบตรวจสอบความซื่อสัตย์ในการเข้าสอบ
+        </p>
+      </div>
+    `);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const studentLat = position.coords.latitude;
+        const studentLon = position.coords.longitude;
+        
+        // พิกัดวิทยาลัยเทคนิคตาก
+        const targetLat = 16.883873762458574;
+        const targetLon = 99.11181433709865;
+        const maxRadius = 500; // รัศมี 500 เมตร
+        
+        const distance = getDistanceInMeters(studentLat, studentLon, targetLat, targetLon);
+        closeModal();
+
+        if (distance > maxRadius) {
+          alert(`ไม่อนุญาตให้ทำข้อสอบ!\n\nคุณอยู่นอกขอบเขตที่กำหนด โดยอยู่ห่างจากวิทยาลัยเทคนิคตากเป็นระยะทางประมาณ ${Math.round(distance)} เมตร\n\n* ข้อสอบชุดนี้กำหนดให้เข้าสอบได้เฉพาะภายในรัศมี 500 เมตรของวิทยาลัยเท่านั้น`);
+        } else {
+          // ผ่านเกณฑ์
+          proceedToStartExam(exam);
+        }
+      },
+      (error) => {
+        closeModal();
+        let errMsg = 'ไม่สามารถค้นหาตำแหน่งของคุณได้';
+        if (error.code === error.PERMISSION_DENIED) {
+          errMsg = 'สิทธิ์การเข้าถึงพิกัดถูกปฏิเสธ (Geolocation Permission Denied) กรุณาอนุมัติสิทธิ์เข้าถึงพิกัดบนเบราว์เซอร์ของคุณ';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          errMsg = 'ไม่พบสัญญาณพิกัดจากอุปกรณ์ของคุณ';
+        } else if (error.code === error.TIMEOUT) {
+          errMsg = 'หมดเวลาในการระบุตำแหน่งพิกัด GPS';
+        }
+        alert(`เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์สถานที่: ${errMsg}\n\n* ข้อสอบนี้จัดสอบเฉพาะภายในพื้นที่วิทยาลัยเทคนิคตากเท่านั้น`);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  } else {
+    // ไม่มีขอบเขตพิกัด
+    proceedToStartExam(exam);
+  }
+};
+
+function proceedToStartExam(exam) {
   if (confirm(`คุณต้องการเริ่มทำข้อสอบออนไลน์ในชุด "${exam.title}" หรือไม่?\n\n** ข้อบังคับและระเบียบความปลอดภัย **\n1. ระบบจะบังคับล็อคหน้าจอของท่านให้อยู่ในโหมดเต็มหน้าจอ (Fullscreen)\n2. ห้ามสลับแท็บ ย่อบราวเซอร์ หรือเปิดแอปฯ อื่นโดยเด็ดขาด\n3. อนุญาตให้ออกนอกหน้าจอได้ไม่เกิน 2 ครั้ง ครั้งที่ 3 ระบบจะทำการระงับและส่งกระดาษคำตอบทันที!`)) {
     // เซ็ตสถานะการสอบ
     activeExam = exam;
@@ -2683,7 +2770,7 @@ window.initiateExam = async function (examId) {
     renderExamQuestion(0);
     renderExamQuestionsNavigationGrid();
   }
-};
+}
 
 function enterFullscreenMode() {
   try {
