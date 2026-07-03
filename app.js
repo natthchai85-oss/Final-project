@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (initialTheme === 'light') initialTheme = 'light-theme';
   setTheme(initialTheme);
 
+  // เช็ค URL parameters สำหรับการเข้าร่วมห้องเรียนผ่าน QR Code ลิงก์ตรง
+  const urlParams = new URLSearchParams(window.location.search);
+  const enrollCode = urlParams.get('enroll');
+  if (enrollCode) {
+    sessionStorage.setItem('pendingEnrollCode', enrollCode.toUpperCase());
+    // ลบ query parameter ออกจาก URL เพื่อความเป็นระเบียบและไม่ลงทะเบียนซ้ำตอนรีเฟรช
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   // ตรวจสอบเซสชันผู้ใช้เดิม
   const savedUser = sessionStorage.getItem('currentUser');
   if (savedUser) {
@@ -234,6 +243,26 @@ async function showAppShell() {
   // โหลดเมนูข้างและหน้าแรกตามบทบาท
   renderSidebarMenu();
   await switchView('dashboard');
+
+  // ตรวจสอบห้องเรียนที่รอนำเข้า (จาก QR Code ลิงก์ตรง)
+  const pendingCode = sessionStorage.getItem('pendingEnrollCode');
+  if (pendingCode && currentUser && currentUser.role === 'student') {
+    sessionStorage.removeItem('pendingEnrollCode');
+    setTimeout(async () => {
+      const subject = await window.db.getSubject(pendingCode);
+      if (subject) {
+        const success = await window.db.enrollStudent(currentUser.id, pendingCode);
+        if (success) {
+          alert(`ยินดีต้อนรับ! คุณได้เข้าร่วมห้องเรียนรายวิชา "${subject.name}" ผ่าน QR Code สำเร็จแล้ว`);
+        } else {
+          alert(`คุณได้ลงทะเบียนเรียนวิชา "${subject.name}" ไว้เรียบร้อยแล้ว`);
+        }
+        await switchView('student_subjects'); // สลับไปหน้าวิชาเรียนเพื่อดูข้อมูล
+      } else {
+        alert(`ไม่พบรหัสวิชา "${pendingCode}" ในระบบจากการสแกน QR Code`);
+      }
+    }, 500);
+  }
 }
 
 function bindShellEvents() {
@@ -694,39 +723,141 @@ async function renderStudentSubjects(container) {
 
 function openEnrollmentModal() {
   openModal('เข้าร่วมวิชาเรียนหรือห้องสอบ', `
-    <form id="enrollment-modal-form" novalidate>
-      <div class="form-group">
-        <label for="enroll-subject-code" class="form-label">กรอกรหัสประจำวิชา (6 ตัวอักษร เช่น MA101, SC102)</label>
-        <input type="text" id="enroll-subject-code" class="form-control" placeholder="ระบุรหัสวิชาที่อาจารย์กำหนด" maxlength="10" required style="text-transform: uppercase;">
+    <div id="enrollment-form-container" style="color: var(--text-primary); font-family: inherit;">
+      <form id="enrollment-modal-form" novalidate>
+        <div class="form-group" style="text-align: left;">
+          <label for="enroll-subject-code" class="form-label" style="font-weight: 600;">กรอกรหัสประจำวิชา (6 ตัวอักษร เช่น MA101, SC102)</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text" id="enroll-subject-code" class="form-control" placeholder="ระบุรหัสวิชาที่อาจารย์กำหนด" maxlength="10" required style="text-transform: uppercase; flex: 1; padding: 8px;">
+            <button type="button" class="btn btn-secondary" id="enroll-scan-btn" title="สแกน QR Code" style="padding: 0 12px; font-size: 12.5px;">
+              <i class="lucide-icon" data-lucide="qr-code" style="vertical-align:middle; margin-right:4px;"></i>สแกน QR
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+          <button type="button" class="btn btn-secondary" id="enroll-cancel-btn">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">ยืนยันลงทะเบียน</button>
+        </div>
+      </form>
+    </div>
+    
+    <div id="enrollment-scanner-container" style="display: none; text-align: center; color: var(--text-primary); font-family: inherit;">
+      <p style="font-size:13.5px; color:var(--text-secondary); margin-bottom:12px;">กรุณาหันกล้องไปยังภาพ QR Code ให้ชัดเจน</p>
+      <div id="qr-reader" style="width: 100%; max-width: 280px; margin: 0 auto; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);"></div>
+      <div style="margin-top: 20px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="enroll-scan-close-btn" style="width: 100%;">กลับไปพิมพ์รหัส</button>
       </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
-        <button type="button" class="btn btn-secondary" id="enroll-cancel-btn">ยกเลิก</button>
-        <button type="submit" class="btn btn-primary">ยืนยันลงทะเบียน</button>
-      </div>
-    </form>
+    </div>
   `);
 
+  refreshIcons(document.getElementById('modal-body-content'));
+
   const form = document.getElementById('enrollment-modal-form');
-  document.getElementById('enroll-cancel-btn').addEventListener('click', closeModal);
+  const cancelBtn = document.getElementById('enroll-cancel-btn');
+  const scanBtn = document.getElementById('enroll-scan-btn');
+  const scanCloseBtn = document.getElementById('enroll-scan-close-btn');
+  const formContainer = document.getElementById('enrollment-form-container');
+  const scannerContainer = document.getElementById('enrollment-scanner-container');
+
+  cancelBtn.addEventListener('click', closeModal);
+
+  // การผูกระบบกล้องสแกน
+  scanBtn.addEventListener('click', async () => {
+    // ซ่อนฟอร์มปกติแล้วแสดงกล่องกล้อง
+    formContainer.style.display = 'none';
+    scannerContainer.style.display = 'block';
+
+    if (!window.Html5Qrcode) {
+      alert('ระบบกล้องแสกนยังโหลดไม่สมบูรณ์ กรุณารอ 2-3 วินาทีแล้วลองอีกครั้ง');
+      formContainer.style.display = 'block';
+      scannerContainer.style.display = 'none';
+      return;
+    }
+
+    const html5QrCode = new Html5Qrcode("qr-reader");
+    window.activeScanner = html5QrCode;
+
+    try {
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        {
+          fps: 15,
+          qrbox: { width: 200, height: 200 }
+        },
+        async (decodedText) => {
+          // สแกนเจอข้อมูลสำเร็จ!
+          console.log("QR Scan Success:", decodedText);
+          
+          // สั่งปิดกล้อง
+          try {
+            await html5QrCode.stop();
+          } catch (e) {
+            console.warn(e);
+          }
+          window.activeScanner = null;
+
+          // แปลง URL ลิงก์ตรงเข้าร่วมชั้นเรียน
+          let subjectCode = decodedText.trim();
+          if (subjectCode.includes('?enroll=')) {
+            try {
+              const url = new URL(subjectCode);
+              const param = url.searchParams.get('enroll');
+              if (param) subjectCode = param;
+            } catch (e) {}
+          } else if (subjectCode.includes('/index.html')) {
+            const match = subjectCode.match(/enroll=([^&]+)/);
+            if (match && match[1]) subjectCode = match[1];
+          }
+
+          document.getElementById('enroll-subject-code').value = subjectCode.toUpperCase();
+
+          // แสดงฟอร์มปกติคืน
+          formContainer.style.display = 'block';
+          scannerContainer.style.display = 'none';
+
+          // ส่งฟอร์มโดยออโต้
+          form.dispatchEvent(new Event('submit'));
+        },
+        (errorMessage) => {
+          // มีการดีเทคตลอดเวลา ลบ log เพื่อเลี่ยง log สแปม
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      alert('ไม่สามารถเปิดใช้งานกล้องถ่ายภาพได้ กรุณาอนุมัติสิทธิ์กล้องในบราวเซอร์ของคุณ');
+      window.activeScanner = null;
+      formContainer.style.display = 'block';
+      scannerContainer.style.display = 'none';
+    }
+  });
+
+  scanCloseBtn.addEventListener('click', async () => {
+    if (window.activeScanner) {
+      try {
+        await window.activeScanner.stop();
+      } catch (e) {}
+      window.activeScanner = null;
+    }
+    formContainer.style.display = 'block';
+    scannerContainer.style.display = 'none';
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = document.getElementById('enroll-subject-code').value.trim().toUpperCase();
     if (!code) return;
 
-    // ค้นหาวิชานั้นมีในระบบไหม
     const subject = await window.db.getSubject(code);
     if (!subject) {
       alert('ไม่พบรหัสวิชานี้ในระบบ โปรดตรวจสอบความถูกต้องของตัวอักษรอีกครั้ง');
       return;
     }
 
-    // ทำการเข้าร่วมห้องเรียน
     const success = await window.db.enrollStudent(currentUser.id, code);
     if (success) {
       alert(`ยินดีต้อนรับ! คุณเข้าร่วมห้องเรียนรายวิชา "${subject.name}" สำเร็จ`);
       closeModal();
-      await switchView(currentView); // รีโหลดหน้านั้น
+      await switchView(currentView);
     } else {
       alert('คุณลงทะเบียนเรียนวิชานี้ไว้เรียบร้อยแล้ว ไม่ต้องทำซ้ำ');
     }
@@ -1064,9 +1195,12 @@ async function renderTeacherSubjects(container) {
             <span>นักเรียน: <strong>${studentsCount} คน</strong></span>
             <span>มีข้อสอบ: ${examsCount} ชุด</span>
           </div>
-          <div class="item-card-footer" style="margin-top:auto;">
-            <button class="btn btn-danger" onclick="deleteSubjectByTeacher('${sub.id}', '${sub.name}')" style="width: 100%; padding: 8px; font-size:12px;">
-              <i class="lucide-icon" data-lucide="trash-2" style="width:14px; height:14px;"></i> ลบวิชานี้
+          <div class="item-card-footer" style="margin-top:auto; display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="showSubjectQrCode('${sub.id}', '${sub.name}')" style="padding: 8px; font-size:12px; flex: 1;">
+              <i class="lucide-icon" data-lucide="qr-code" style="width:14px; height:14px;"></i> QR Code
+            </button>
+            <button class="btn btn-danger" onclick="deleteSubjectByTeacher('${sub.id}', '${sub.name}')" style="padding: 8px; font-size:12px;">
+              <i class="lucide-icon" data-lucide="trash-2" style="width:14px; height:14px;"></i>
             </button>
           </div>
         </article>
@@ -3109,6 +3243,9 @@ function openImportGoogleFormModal() {
   });
 }
 
+// ตัวแปรเก็บกล้องที่กำลังสแกนแบบสากล
+window.activeScanner = null;
+
 // -------------------------------------------------------------
 // 20. ระบบโมดอลหลักป๊อปอัปสากล (Modal Controllers)
 // -------------------------------------------------------------
@@ -3122,6 +3259,62 @@ function openModal(title, bodyHtml) {
 }
 
 function closeModal() {
+  if (window.activeScanner) {
+    try {
+      window.activeScanner.stop().catch(err => console.warn(err));
+    } catch (err) {
+      console.warn(err);
+    }
+    window.activeScanner = null;
+  }
   document.getElementById('global-modal-overlay').style.display = 'none';
   document.getElementById('modal-body-content').innerHTML = '';
+}
+
+// -------------------------------------------------------------
+// 21. ฟังก์ชันแสดง QR Code และลิงก์เข้าร่วมชั้นเรียนสำหรับคุณครู
+// -------------------------------------------------------------
+window.showSubjectQrCode = function(subjectId, subjectName) {
+  const enrollUrl = window.location.origin + window.location.pathname + '?enroll=' + encodeURIComponent(subjectId);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(enrollUrl)}`;
+  
+  const modalHtml = `
+    <div style="text-align: center; color: var(--text-primary); padding: 10px 0; font-family: inherit;">
+      <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
+        ให้นักเรียนสแกน QR Code นี้เพื่อเข้าร่วมชั้นเรียนวิชา <strong>${escapeHtml(subjectName)}</strong> (รหัส: ${escapeHtml(subjectId)})
+      </p>
+      
+      <div style="background-color: white; padding: 15px; display: inline-block; border-radius: var(--radius-md); box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <img src="${qrUrl}" style="display: block; width: 200px; height: 200px;" alt="QR Code เข้าร่วมชั้นเรียน">
+      </div>
+      
+      <div class="form-group" style="margin-top: 10px; text-align: left;">
+        <label class="form-label" style="font-weight: 600;">ลิงก์เข้าร่วมชั้นเรียนโดยตรง:</label>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <input type="text" class="form-control" id="enroll-link-input" value="${enrollUrl}" readonly style="flex: 1; font-size: 11.5px; background: rgba(255,255,255,0.05); padding: 8px;">
+          <button class="btn btn-primary" id="copy-enroll-link-btn" style="padding: 0 16px; font-size: 12px;">
+            <i class="lucide-icon" data-lucide="copy" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>คัดลอก
+          </button>
+        </div>
+      </div>
+      
+      <div style="margin-top: 24px; border-top: 1px solid var(--border-glass); padding-top: 16px; display: flex; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  `;
+  
+  openModal(`QR Code เข้าเรียน: ${subjectName}`, modalHtml);
+  refreshIcons(document.getElementById('modal-body-content'));
+  
+  document.getElementById('copy-enroll-link-btn').addEventListener('click', () => {
+    const input = document.getElementById('enroll-link-input');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+      alert('คัดลอกลิงก์เข้าร่วมชั้นเรียนสำเร็จแล้ว!');
+    }).catch(err => {
+      console.error('Failed to copy', err);
+    });
+  });
 }
