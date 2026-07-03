@@ -56,8 +56,63 @@ document.addEventListener('DOMContentLoaded', () => {
   bindExamEvents();
   bindThemeToggle();
 
+  // เปิดใช้งานระบบป้องกันความปลอดภัยของซอร์สโค้ด
+  initializeSecuritySettings();
+
   refreshIcons(document.getElementById('auth-container'));
 });
+
+// -------------------------------------------------------------
+// ระบบป้องกันการขโมยโค้ดและการเปิด DevTools (Security Controllers)
+// -------------------------------------------------------------
+function initializeSecuritySettings() {
+  // 1. ป้องกันการคลิกขวา (Context Menu)
+  document.addEventListener('contextmenu', (e) => {
+    if (!currentUser || currentUser.role === 'student') {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // 2. ป้องกันปุ่มลัดคีย์บอร์ด F12, Ctrl+Shift+I/C/J, Ctrl+U, Ctrl+S
+  document.addEventListener('keydown', (e) => {
+    if (!currentUser || currentUser.role === 'student') {
+      const key = e.key ? e.key.toLowerCase() : '';
+      const code = e.keyCode || e.which;
+
+      // F12
+      if (code === 123 || key === 'f12') {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl + Shift + I/C/J หรือ Ctrl + U หรือ Ctrl + S
+      if (e.ctrlKey && (
+        (e.shiftKey && (key === 'i' || key === 'j' || key === 'c' || code === 73 || code === 74 || code === 67)) ||
+        key === 'u' || code === 85 ||
+        key === 's' || code === 83
+      )) {
+        e.preventDefault();
+        return false;
+      }
+    }
+  });
+
+  // 3. ดีบั๊กเกอร์ลูป ป้องกันการใช้คอนโซลตรวจหาค่าตัวแปร
+  setInterval(() => {
+    if (!currentUser || currentUser.role === 'student') {
+      try {
+        (function() {
+          return function(inst) {
+            inst.constructor('debugger')();
+          };
+        })()();
+      } catch (err) {
+        debugger;
+      }
+    }
+  }, 250);
+}
 
 // จัดการการเปลี่ยนธีม
 function setTheme(theme) {
