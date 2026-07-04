@@ -305,47 +305,143 @@
   <!-- 6. หน้าต่างเลือกธีมสี (THEME PICKER MODAL) -->
   <!-- ========================================== -->
   <div id="theme-modal-overlay" class="modal-overlay" style="display: none;">
-    <div class="modal-content glass-panel" style="max-width: 400px;">
-      <div class="modal-header">
-        <h3>เลือกธีมที่คุณชอบ</h3>
+    <div class="modal-content glass-panel" style="max-width: 440px; max-height: 85vh; padding: 24px 20px;">
+      <div class="modal-header" style="margin-bottom: 12px;">
+        <h3 style="font-size: 18px; font-weight: 600;">ธีม</h3>
         <button class="close-modal-btn" id="close-theme-modal-btn" aria-label="Close dialog">
           <i class="lucide-icon" data-lucide="x"></i>
         </button>
       </div>
       <div>
-        <p style="font-size: 13px; color: var(--text-secondary);">เปลี่ยนสีสันของแอปพลิเคชันตามสไตล์ของคุณ</p>
-        <div class="theme-options-grid" id="theme-options-container">
-          <!-- Dark Theme -->
-          <div class="theme-option-card" data-theme="dark-theme">
-            <div class="theme-color-preview" style="background: linear-gradient(135deg, #0b0f19 50%, #6366f1 50%);">
-            </div>
-            <span>Dark Mode</span>
-          </div>
-          <!-- Light Theme -->
-          <div class="theme-option-card active" data-theme="light-theme">
-            <div class="theme-color-preview"
-              style="background: linear-gradient(135deg, #f8fafc 50%, #4f46e5 50%); border-color: #cbd5e1;"></div>
-            <span>Light Mode</span>
-          </div>
-          <!-- Ocean Theme -->
-          <div class="theme-option-card" data-theme="ocean-theme">
-            <div class="theme-color-preview" style="background: linear-gradient(135deg, #041424 50%, #0ea5e9 50%);">
-            </div>
-            <span>Ocean</span>
-          </div>
-          <!-- Forest Theme -->
-          <div class="theme-option-card" data-theme="forest-theme">
-            <div class="theme-color-preview" style="background: linear-gradient(135deg, #061c13 50%, #10b981 50%);">
-            </div>
-            <span>Forest</span>
-          </div>
-          <!-- Sunset Theme -->
-          <div class="theme-option-card" data-theme="sunset-theme">
-            <div class="theme-color-preview" style="background: linear-gradient(135deg, #1f0f0c 50%, #f97316 50%);">
-            </div>
-            <span>Sunset</span>
-          </div>
+        
+        <!-- Toggle โหมดกลางวัน -->
+        <div class="theme-toggle-row">
+          <span style="font-size: 15px; font-weight: 500; color: var(--text-primary);">โหมดกลางวัน</span>
+          <label class="switch-container">
+            <input type="checkbox" id="light-mode-switch">
+            <span class="switch-slider"></span>
+          </label>
         </div>
+
+        <p style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-align: left;">เลือกสีของแอพ</p>
+        
+        <!-- รายการเฉดสี 14 สีแบบลิสต์ยาวสไตล์ iOS -->
+        <div style="display: flex; flex-direction: column; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-glass); overflow-y: auto; max-height: 45vh; text-align: left;">
+          
+          <div class="accent-option-card active" data-color="color-theme-blue" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #007aff;"></div>
+              <span style="font-size: 14px;">color-theme-blue</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-purple" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #9c27b0;"></div>
+              <span style="font-size: 14px;">color-theme-purple</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-teal" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #009688;"></div>
+              <span style="font-size: 14px;">color-theme-teal</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-orange" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ff9500;"></div>
+              <span style="font-size: 14px;">color-theme-orange</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-green" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #4caf50;"></div>
+              <span style="font-size: 14px;">color-theme-green</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-red" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ff3b30;"></div>
+              <span style="font-size: 14px;">color-theme-red</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-pink" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ff2d55;"></div>
+              <span style="font-size: 14px;">color-theme-pink</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-yellow" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ffcc00;"></div>
+              <span style="font-size: 14px;">color-theme-yellow</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-deeporange" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #ff5722;"></div>
+              <span style="font-size: 14px;">color-theme-deeporange</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-deeppurple" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #673ab7;"></div>
+              <span style="font-size: 14px;">color-theme-deeppurple</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-lightblue" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #03a9f4;"></div>
+              <span style="font-size: 14px;">color-theme-lightblue</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-lime" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #8bc34a;"></div>
+              <span style="font-size: 14px;">color-theme-lime</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-gray" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-glass);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #8e8e93;"></div>
+              <span style="font-size: 14px;">color-theme-gray</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+          <div class="accent-option-card" data-color="color-theme-black" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 20px; height: 20px; border-radius: 50%; background-color: #212121;"></div>
+              <span style="font-size: 14px;">color-theme-black</span>
+            </div>
+            <i class="lucide-icon check-icon" data-lucide="check" style="width: 16px; height: 16px; color: #007aff; display: none;"></i>
+          </div>
+
+        </div>
+
       </div>
     </div>
   </div>

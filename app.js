@@ -26,11 +26,11 @@ let examSession = {
 // -------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   // สลับธีมเดิมจากหน่วยความจำถ้ามี
-  const savedTheme = localStorage.getItem('theme') || 'light-theme';
-  let initialTheme = savedTheme;
-  if (initialTheme === 'dark') initialTheme = 'dark-theme';
-  if (initialTheme === 'light') initialTheme = 'light-theme';
-  setTheme(initialTheme);
+  const savedTheme = localStorage.getItem('theme') || 'dark-theme';
+  setTheme(savedTheme);
+
+  const savedAccent = localStorage.getItem('accent-color') || 'color-theme-blue';
+  setAccentColor(savedAccent);
 
   // เช็ค URL parameters สำหรับการเข้าร่วมห้องเรียนผ่าน QR Code ลิงก์ตรง
   const urlParams = new URLSearchParams(window.location.search);
@@ -114,23 +114,50 @@ function initializeSecuritySettings() {
   }, 250);
 }
 
-// จัดการการเปลี่ยนธีม
+// จัดการการเปลี่ยนธีมพื้นหลัง (โหมดกลางวัน / โหมดกลางคืน)
 function setTheme(theme) {
   const body = document.getElementById('app-body');
-
+  
   // ลบธีมเก่าออกทั้งหมด
-  body.classList.remove('light-theme', 'dark-theme', 'ocean-theme', 'forest-theme', 'sunset-theme');
-
+  body.classList.remove('light-theme', 'dark-theme');
+  
   // เพิ่มธีมใหม่
   body.classList.add(theme);
   localStorage.setItem('theme', theme);
 
-  // อัปเดต UI หน้าต่างเลือกธีมให้ตรงกัน
-  document.querySelectorAll('.theme-option-card').forEach(card => {
-    if (card.getAttribute('data-theme') === theme) {
+  // ปรับสวิตช์สถานะในหน้าต่างให้สอดคล้องกัน
+  const sw = document.getElementById('light-mode-switch');
+  if (sw) {
+    sw.checked = (theme === 'light-theme');
+  }
+}
+
+// จัดการการเปลี่ยนโทนสีหลักของแอปพลิเคชัน (14 Accent Colors)
+function setAccentColor(colorClass) {
+  const body = document.getElementById('app-body');
+  
+  // ลบคลาสเฉดสีเดิมออกทั้งหมด
+  const f7ThemeClasses = [
+    'color-theme-blue', 'color-theme-purple', 'color-theme-teal', 'color-theme-orange',
+    'color-theme-green', 'color-theme-red', 'color-theme-pink', 'color-theme-yellow',
+    'color-theme-deeporange', 'color-theme-deeppurple', 'color-theme-lightblue',
+    'color-theme-lime', 'color-theme-gray', 'color-theme-black'
+  ];
+  f7ThemeClasses.forEach(cls => body.classList.remove(cls));
+  
+  // เพิ่มคลาสเฉดสีใหม่ที่เลือก
+  body.classList.add(colorClass);
+  localStorage.setItem('accent-color', colorClass);
+
+  // ปรับสถานะไอคอนเครื่องหมายถูก (Check Icon) ในหน้าโมดอลเลือกสีให้ตรงกัน
+  document.querySelectorAll('.accent-option-card').forEach(card => {
+    const checkIcon = card.querySelector('.check-icon');
+    if (card.getAttribute('data-color') === colorClass) {
       card.classList.add('active');
+      if (checkIcon) checkIcon.style.display = 'block';
     } else {
       card.classList.remove('active');
+      if (checkIcon) checkIcon.style.display = 'none';
     }
   });
 }
@@ -139,10 +166,16 @@ function bindThemeToggle() {
   const btn = document.getElementById('theme-toggle-btn');
   const modal = document.getElementById('theme-modal-overlay');
   const closeBtn = document.getElementById('close-theme-modal-btn');
-  const themeCards = document.querySelectorAll('.theme-option-card');
+  const lightModeSwitch = document.getElementById('light-mode-switch');
+  const accentCards = document.querySelectorAll('.accent-option-card');
 
   if (btn && modal) {
     btn.addEventListener('click', () => {
+      // ซิงค์สวิตช์โหมดกลางวันทุกครั้งที่เปิดโมดอล
+      const currentTheme = localStorage.getItem('theme') || 'dark-theme';
+      if (lightModeSwitch) {
+        lightModeSwitch.checked = (currentTheme === 'light-theme');
+      }
       modal.style.display = 'flex';
     });
 
@@ -157,10 +190,19 @@ function bindThemeToggle() {
     });
   }
 
-  themeCards.forEach(card => {
+  // ผูกการสลับโหมดกลางวันด้วยสวิตช์
+  if (lightModeSwitch) {
+    lightModeSwitch.addEventListener('change', (e) => {
+      const newTheme = e.target.checked ? 'light-theme' : 'dark-theme';
+      setTheme(newTheme);
+    });
+  }
+
+  // ผูกการกดเลือกวงกลมสีหลัก 14 สี
+  accentCards.forEach(card => {
     card.addEventListener('click', () => {
-      const theme = card.getAttribute('data-theme');
-      setTheme(theme);
+      const color = card.getAttribute('data-color');
+      setAccentColor(color);
     });
   });
 }
