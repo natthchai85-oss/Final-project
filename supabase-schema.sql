@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS public.exams (
     questions JSONB DEFAULT '[]'::jsonb NOT NULL, -- รายการคำถามในข้อสอบ
     active BOOLEAN DEFAULT TRUE NOT NULL,
     require_gps BOOLEAN DEFAULT FALSE NOT NULL,
+    show_results BOOLEAN DEFAULT TRUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 

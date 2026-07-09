@@ -997,17 +997,32 @@ async function renderStudentExams(container) {
 
       if (attempt) {
         // มีการสอบประวัติแล้ว
+        const showScore = ex.showResults !== false;
         if (attempt.graded) {
-          badgeHtml = `<span class="status-badge status-pass">สอบแล้ว (${attempt.score}/${attempt.totalPoints} คะแนน)</span>`;
+          if (showScore) {
+            badgeHtml = `<span class="status-badge status-pass">สอบแล้ว (${attempt.score}/${attempt.totalPoints} คะแนน)</span>`;
+          } else {
+            badgeHtml = `<span class="status-badge status-pass">สอบแล้ว (ส่งคำตอบแล้ว)</span>`;
+          }
         } else {
           badgeHtml = `<span class="status-badge status-pending">รอคุณครูให้คะแนนอัตนัย</span>`;
         }
-        footerBtnHtml = `
-          <button class="btn btn-secondary" onclick="viewAttemptDetails('${attempt.id}')" style="width: 100%;">
-            <i class="lucide-icon" data-lucide="eye"></i>
-            <span>ดูเฉลย & ผลวิเคราะห์</span>
-          </button>
-        `;
+        
+        if (showScore) {
+          footerBtnHtml = `
+            <button class="btn btn-secondary" onclick="viewAttemptDetails('${attempt.id}')" style="width: 100%;">
+              <i class="lucide-icon" data-lucide="eye"></i>
+              <span>ดูเฉลย & ผลวิเคราะห์</span>
+            </button>
+          `;
+        } else {
+          footerBtnHtml = `
+            <button class="btn btn-secondary" disabled style="width: 100%; opacity: 0.6; cursor: not-allowed;">
+              <i class="lucide-icon" data-lucide="lock"></i>
+              <span>ไม่อนุญาตให้ดูเฉลย</span>
+            </button>
+          `;
+        }
       } else {
         // ยังไม่ได้สอบ
         if (ex.active) {
@@ -1054,7 +1069,11 @@ async function renderStudentExams(container) {
 // 8. หมวดหมู่นักเรียน - ประวัติการสอบ (Student Historical Scores)
 // -------------------------------------------------------------
 async function renderStudentHistory(container) {
-  const attempts = await window.db.getAttemptsByStudent(currentUser.id);
+  const [attempts, exams] = await Promise.all([
+    window.db.getAttemptsByStudent(currentUser.id),
+    window.db.getExams()
+  ]);
+  const examMap = new Map(exams.map(e => [e.id, e]));
 
   let html = `
     <div class="view-title-container">
@@ -1092,6 +1111,9 @@ async function renderStudentHistory(container) {
       const seconds = att.timeSpent % 60;
       const formattedTime = `${minutes} น. ${seconds} วิ.`;
 
+      const exam = examMap.get(att.examId);
+      const showScore = exam ? (exam.showResults !== false) : true;
+
       let cheatLabel = `<span style="color: var(--success); font-weight:600;"><i class="lucide-icon" data-lucide="check" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>ปกติ</span>`;
       if (att.status === 'cheated') {
         cheatLabel = `<span style="color: var(--danger); font-weight:600;"><i class="lucide-icon" data-lucide="alert-triangle" style="width:14px; height:14px; display:inline-block; vertical-align:middle; margin-right:4px;"></i>ถูกบล็อกทุจริต (${att.exitCount} ครั้ง)</span>`;
@@ -1100,11 +1122,28 @@ async function renderStudentHistory(container) {
       }
 
       let scoreLabel = '';
-      if (att.graded) {
+      if (!showScore) {
+        scoreLabel = `<span style="color: var(--text-muted); font-size:12px;">ถูกซ่อนโดยครู</span>`;
+      } else if (att.graded) {
         const passPercent = (att.score / att.totalPoints) * 100;
         scoreLabel = `<strong style="font-size: 16px; color: ${passPercent >= 50 ? 'var(--success)' : 'var(--danger)'};">${att.score}</strong> / ${att.totalPoints}`;
       } else {
         scoreLabel = `<span style="color: var(--warning); font-size:12px;">รอครูให้คะแนนอัตนัย</span>`;
+      }
+
+      let actionBtn = `
+        <button class="btn btn-secondary" onclick="viewAttemptDetails('${att.id}')" style="padding: 6px 12px; font-size:12px;">
+          <i class="lucide-icon" data-lucide="file-search" style="width: 14px; height:14px;"></i>
+          <span>ส่องข้อสอบ</span>
+        </button>
+      `;
+      if (!showScore) {
+        actionBtn = `
+          <button class="btn btn-secondary" disabled style="padding: 6px 12px; font-size:12px; opacity: 0.6; cursor: not-allowed;">
+            <i class="lucide-icon" data-lucide="lock" style="width: 14px; height:14px;"></i>
+            <span>ส่องข้อสอบ</span>
+          </button>
+        `;
       }
 
       html += `
@@ -1121,10 +1160,7 @@ async function renderStudentHistory(container) {
             ${att.comments ? `<span class="status-badge status-pass" title="${att.comments}">ครูมีคำวิจารณ์</span>` : `<span style="color: var(--text-muted); font-size:12px;">ไม่มีหมายเหตุ</span>`}
           </td>
           <td>
-            <button class="btn btn-secondary" onclick="viewAttemptDetails('${att.id}')" style="padding: 6px 12px; font-size:12px;">
-              <i class="lucide-icon" data-lucide="file-search" style="width: 14px; height:14px;"></i>
-              <span>ส่องข้อสอบ</span>
-            </button>
+            ${actionBtn}
           </td>
         </tr>
       `;
@@ -1148,6 +1184,13 @@ window.viewAttemptDetails = async function (attemptId) {
   if (!att) return;
 
   const exam = await window.db.getExam(att.examId);
+  const isTeacherOrAdmin = currentUser.role === 'teacher' || currentUser.role === 'admin';
+  const showScore = exam ? (exam.showResults !== false) : true;
+
+  if (currentUser.role === 'student' && !showScore) {
+    alert('ข้อสอบชุดนี้ถูกตั้งค่าโดยคุณครูไม่อนุญาตให้นักเรียนเข้าตรวจสอบเฉลยหรือผลคะแนนสอบย้อนหลัง');
+    return;
+  }
 
   let html = `
     <div style="padding: 10px;">
@@ -1292,9 +1335,12 @@ async function renderTeacherSubjects(container) {
             <span>นักเรียน: <strong>${studentsCount} คน</strong></span>
             <span>มีข้อสอบ: ${examsCount} ชุด</span>
           </div>
-          <div class="item-card-footer" style="margin-top:auto; display:flex; gap:10px;">
+          <div class="item-card-footer" style="margin-top:auto; display:flex; flex-wrap:wrap; gap:10px;">
             <button class="btn btn-secondary" onclick="showSubjectQrCode('${sub.id}', '${sub.name}')" style="padding: 8px; font-size:12px; flex: 1;">
               <i class="lucide-icon" data-lucide="qr-code" style="width:14px; height:14px;"></i> QR Code
+            </button>
+            <button class="btn btn-info" onclick="manageSubjectStudents('${sub.id}', '${sub.name}')" style="padding: 8px; font-size:12px; flex: 1;">
+              <i class="lucide-icon" data-lucide="users" style="width:14px; height:14px;"></i> รายชื่อนักเรียน
             </button>
             <button class="btn btn-danger" onclick="deleteSubjectByTeacher('${sub.id}', '${sub.name}')" style="padding: 8px; font-size:12px;">
               <i class="lucide-icon" data-lucide="trash-2" style="width:14px; height:14px;"></i>
@@ -1392,6 +1438,99 @@ window.deleteSubjectByTeacher = async function (subjectId, subjectName) {
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบวิชา', `ลบวิชาเรียน "${subjectName}" (${subjectId})`);
     alert('ลบรายวิชาเสร็จสิ้น');
     await switchView('teacher_subjects');
+  }
+};
+
+window.manageSubjectStudents = async function (subjectId, subjectName) {
+  const students = await window.db.getEnrolledStudents(subjectId);
+  const enrollments = await window.db.getEnrollments();
+  const subjectEnrollments = enrollments.filter(e => e.subjectId === subjectId);
+
+  let html = `
+    <div style="padding: 10px;">
+      <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+        รายชื่อนักเรียนทั้งหมดที่เข้าร่วมห้องเรียนวิชา <strong>${subjectName} (${subjectId})</strong>
+      </p>
+  `;
+
+  if (students.length === 0) {
+    html += `
+      <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+        <i class="lucide-icon" data-lucide="users" style="font-size: 32px; margin-bottom: 10px; display: inline-block;"></i>
+        <p>ยังไม่มีนักเรียนเข้าร่วมชั้นเรียนนี้</p>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="data-table-container glass-panel" style="max-height: 300px; overflow-y: auto;">
+        <table class="data-table" style="font-size: 13px; width: 100%;">
+          <thead>
+            <tr>
+              <th>ชื่อ-นามสกุล</th>
+              <th>Username</th>
+              <th>วันที่เข้าร่วม</th>
+              <th>การกระทำ</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    students.forEach(st => {
+      const enroll = subjectEnrollments.find(e => e.studentId === st.id);
+      const enrolledDate = enroll ? new Date(enroll.enrolledAt).toLocaleDateString('th-TH') : '-';
+
+      html += `
+        <tr>
+          <td><strong style="color: var(--text-primary);">${st.name}</strong></td>
+          <td>${st.username}</td>
+          <td>${enrolledDate}</td>
+          <td>
+            <button class="btn btn-danger" onclick="removeStudentFromSubject('${st.id}', '${st.name}', '${subjectId}', '${subjectName}')" style="padding: 4px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;">
+              <i class="lucide-icon" data-lucide="user-minus" style="width: 12px; height: 12px;"></i>
+              <span>นำออก</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  openModal(`จัดการนักเรียน: ${subjectName}`, html);
+  refreshIcons(document.getElementById('modal-body-content'));
+};
+
+window.removeStudentFromSubject = async function (studentId, studentName, subjectId, subjectName) {
+  if (confirm(`คุณครูยืนยันต้องการนำนักเรียน "${studentName}" ออกจากรายวิชา "${subjectName}" ใช่หรือไม่?\nข้อมูลผลสอบในวิชานี้ของนักเรียนคนนี้จะถูกลบออกด้วย!`)) {
+    const success = await window.db.unenrollStudent(studentId, subjectId);
+    if (success) {
+      // ลบ attempts ของนักเรียนคนนี้สำหรับข้อสอบในวิชานี้ด้วย
+      const exams = await window.db.getExamsBySubject(subjectId);
+      const attempts = await window.db.getAttempts();
+      const studentAttemptsInSubject = attempts.filter(att => 
+        att.studentId === studentId && exams.some(ex => ex.id === att.examId)
+      );
+      
+      for (const att of studentAttemptsInSubject) {
+        await supabaseClient.from('attempts').delete().eq('id', att.id);
+      }
+
+      await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'จัดการรายชื่อ', `ครูนำนักเรียน "${studentName}" ออกจากวิชา ${subjectName}`);
+      alert(`นำนักเรียน "${studentName}" ออกจากรายวิชาเสร็จสิ้น`);
+      closeModal();
+      
+      // รีเฟรชหน้าห้องเรียนคุณครู
+      const contentArea = document.getElementById('main-content-view');
+      await renderTeacherSubjects(contentArea);
+    } else {
+      alert('เกิดข้อผิดพลาด ไม่สามารถนำนักเรียนออกจากห้องเรียนได้');
+    }
   }
 };
 
@@ -1561,6 +1700,13 @@ async function openCreateExamView() {
               <option value="true">เฉพาะภายในวิทยาลัยเทคนิคตากเท่านั้น (รัศมี 500 เมตร)</option>
             </select>
           </div>
+          <div class="form-group">
+            <label for="b-results" class="form-label">การแสดงผลคะแนนและเฉลยหลังสอบ (Show Results)</label>
+            <select id="b-results" class="form-control">
+              <option value="true">อนุญาตให้นักเรียนดูคะแนนและเฉลยคำตอบได้ทันทีหลังสอบเสร็จ</option>
+              <option value="false">ไม่อนุญาต (ซ่อนคะแนนและเฉลยคำตอบทั้งหมด)</option>
+            </select>
+          </div>
         </div>
 
         <!-- รายการคำถามคำตอบ -->
@@ -1619,6 +1765,7 @@ async function openCreateExamView() {
     const timeLimit = parseInt(document.getElementById('b-timer').value);
     const scheduledDate = document.getElementById('b-date').value;
     const requireGps = document.getElementById('b-gps').value === 'true';
+    const showResults = document.getElementById('b-results').value === 'true';
 
     if (!title || !description || isNaN(timeLimit)) {
       alert('กรุณากรอกข้อมูลส่วนหัวข้อสอบให้ครบถ้วนก่อนส่งบันทึก');
@@ -1638,6 +1785,7 @@ async function openCreateExamView() {
       timeLimit,
       scheduledDate,
       requireGps,
+      showResults,
       questions: tempQuestionsList
     });
 
@@ -3064,7 +3212,11 @@ async function submitExamSheetDirectly(status) {
     // โชว์หน้าโดนทุจริตบอยคอต
     document.getElementById('anti-cheat-terminated-overlay').style.display = 'flex';
   } else {
-    alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nระบบทำการคำนวณคะแนนปรนัยของท่านอัตโนมัติแล้ว`);
+    if (activeExam.showResults !== false) {
+      alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nระบบทำการคำนวณคะแนนปรนัยของท่านอัตโนมัติแล้ว`);
+    } else {
+      alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nคุณครูตั้งค่าไม่อนุญาตให้นักเรียนตรวจคะแนนหรือดูเฉลยหลังสอบ`);
+    }
     await switchView('student_exams');
   }
 }

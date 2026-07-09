@@ -191,6 +191,16 @@ class SupabaseDatabase {
     return mapRows(users);
   }
 
+  async unenrollStudent(studentId, subjectId) {
+    const { error } = await supabaseClient
+      .from('enrollments')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('subject_id', subjectId);
+    if (error) { console.error('unenrollStudent error:', error); return false; }
+    return true;
+  }
+
   // -------------------------------------------------------------
   // หมวดหมู่ข้อสอบ (Exams API)
   // -------------------------------------------------------------
