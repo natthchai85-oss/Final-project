@@ -3506,10 +3506,36 @@ function openImportGoogleFormModal() {
         htmlContent = await response.text();
         success = true;
       } catch (err) {
-        console.warn('corsproxy.io failed, trying fallback allorigins.win...', err);
+        console.warn('corsproxy.io failed, trying fallback codetabs...', err);
       }
 
-      // 2. ถ้าวิธีแรกไม่สำเร็จ ให้ลองใช้ allorigins.win
+      // 2. ลองใช้ api.codetabs.com
+      if (!success) {
+        try {
+          console.log('Attempting import via codetabs...');
+          const response = await fetch(`https://api.codetabs.com/v1/proxy?url=${encodeURIComponent(url)}`);
+          if (!response.ok) throw new Error('CodeTabs returned non-ok status');
+          htmlContent = await response.text();
+          success = true;
+        } catch (err) {
+          console.warn('codetabs failed, trying thingproxy...', err);
+        }
+      }
+
+      // 3. ลองใช้ thingproxy
+      if (!success) {
+        try {
+          console.log('Attempting import via thingproxy...');
+          const response = await fetch(`https://thingproxy.freeboard.io/fetch/${url}`);
+          if (!response.ok) throw new Error('ThingProxy returned non-ok status');
+          htmlContent = await response.text();
+          success = true;
+        } catch (err) {
+          console.warn('thingproxy failed, trying allorigins...', err);
+        }
+      }
+
+      // 4. ถ้าวิธีอื่นๆ ไม่สำเร็จ ให้ลองใช้ allorigins.win
       if (!success) {
         try {
           console.log('Attempting import via allorigins.win...');
