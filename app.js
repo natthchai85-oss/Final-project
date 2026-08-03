@@ -26,7 +26,7 @@ let examSession = {
 // -------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   // สลับธีมเดิมจากหน่วยความจำถ้ามี
-  const savedTheme = localStorage.getItem('theme') || 'dark-theme';
+  const savedTheme = localStorage.getItem('theme') || 'light-theme';
   setTheme(savedTheme);
 
   const savedAccent = localStorage.getItem('accent-color') || 'color-theme-blue';
