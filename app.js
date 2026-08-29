@@ -2603,6 +2603,14 @@ window.openAdminEditUserModal = async function (userId) {
   openModal('แก้ไขรายละเอียดบัญชีผู้ใช้งาน', `
     <form id="admin-edit-user-form" novalidate>
       <div class="form-group">
+        <label for="adm-e-role" class="form-label">บทบาทระบบ</label>
+        <select id="adm-e-role" class="form-control">
+          <option value="student" ${u.role === 'student' ? 'selected' : ''}>นักเรียน (Student)</option>
+          <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>ครูผู้สอน (Teacher)</option>
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ผู้ดูแลระบบสูงสุด (Admin)</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label for="adm-e-name" class="form-label">ชื่อ-นามสกุลจริง</label>
         <input type="text" id="adm-e-name" class="form-control" value="${escapeHtml(u.name)}" required>
       </div>
@@ -2626,16 +2634,17 @@ window.openAdminEditUserModal = async function (userId) {
     e.preventDefault();
     const name = document.getElementById('adm-e-name').value.trim();
     const password = document.getElementById('adm-e-password').value;
+    const role = document.getElementById('adm-e-role').value;
 
     if (!name || !password) {
       alert('ข้อมูลจำยอมกรอกให้ครบครัน');
       return;
     }
 
-    await window.db.updateUser(userId, { name, password });
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}"`);
+    await window.db.updateUser(userId, { name, password, role });
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}" เปลี่ยนบทบาทเป็น ${role}`);
 
-    alert('บันทึกการแก้ไขข้อมูลผู้เรียนเสร็จสิ้น!');
+    alert('บันทึกการแก้ไขข้อมูลผู้ใช้งานเสร็จสิ้น!');
     closeModal();
     renderAdminUsers(document.getElementById('main-content-view'));
   });

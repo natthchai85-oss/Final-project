@@ -54,18 +54,10 @@
         <!-- จะสับเปลี่ยนปุ่มผ่าน JS -->
       </div>
 
-      <!-- แท็บเลือกบทบาทสำหรับสมัครสมาชิก -->
-      <div class="form-group" id="reg-role-group" style="display: none;">
-        <label class="form-label">กรุณาเลือกบทบาทของคุณ</label>
-        <div class="role-selector" style="grid-template-columns: repeat(2, 1fr);">
-          <button type="button" class="role-option active" data-role="student" id="role-btn-student">
-            <i class="lucide-icon" data-lucide="graduation-cap"></i>
-            <span>นักเรียน</span>
-          </button>
-          <button type="button" class="role-option" data-role="teacher" id="role-btn-teacher">
-            <i class="lucide-icon" data-lucide="book-open"></i>
-            <span>คุณครู</span>
-          </button>
+      <!-- แท็บเลือกบทบาทสำหรับสมัครสมาชิก (ซ่อนไว้สำหรับสมัครเฉพาะนักเรียนเท่านั้น) -->
+      <div class="form-group" id="reg-role-group" style="display: none !important;">
+        <div class="role-selector">
+          <button type="button" class="role-option active" data-role="student" id="role-btn-student"></button>
         </div>
       </div>
 
