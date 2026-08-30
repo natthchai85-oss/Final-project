@@ -255,7 +255,7 @@ function bindAuthEvents() {
     const name = document.getElementById('auth-name').value.trim();
 
     if (!username || !password) {
-      alert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+      alert('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน');
       return;
     }
 
@@ -270,7 +270,7 @@ function bindAuthEvents() {
           // รีเซ็ตฟอร์ม
           form.reset();
         } else {
-          alert('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
+          alert('รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง');
         }
       } catch (err) {
         alert(err.message);
@@ -291,7 +291,7 @@ function bindAuthEvents() {
 
         // ตรวจชื่อผู้ใช้ซ้ำ (คิวรีเดียว ไม่ดึง users ทั้งตาราง)
         if (await window.db.isUsernameTaken(username)) {
-          alert('ชื่อผู้ใช้งานนี้ถูกใช้ไปแล้ว กรุณาเลือกชื่ออื่น');
+          alert('รหัสนักศึกษานี้ถูกใช้งานในระบบแล้ว กรุณาตรวจสอบอีกครั้ง');
           return;
         }
 
