@@ -82,7 +82,7 @@ class SupabaseDatabase {
   async addUser(user) {
     const id = 'usr_' + Date.now();
     const newUser = { id, active: true, ...user };
-    const { data, error } = await supabaseClient.from('users').insert([newUser]).select().single();
+    const { data, error } = await supabaseClient.from('users').insert([toSnakeRow(newUser)]).select().single();
     if (error) throw error;
 
     await this.addLog(newUser.id, newUser.name, newUser.role, 'สมัครสมาชิก', `ลงทะเบียนผู้ใช้งานบทบาท ${newUser.role}`);
