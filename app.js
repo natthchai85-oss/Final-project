@@ -1672,10 +1672,7 @@ async function openCreateExamView() {
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="b-desc" class="form-label">คำอธิบาย/ชี้แจงกฎกติกาการสอบ</label>
-          <input type="text" id="b-desc" class="form-control" placeholder="เช่น ห้ามเปิดหนังสือ พยายามตอบคำถามทุกข้อ ตรวจจับการทุจริต..." required>
-        </div>
+
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div class="form-group">
@@ -1757,13 +1754,13 @@ async function openCreateExamView() {
 
     const subjectId = document.getElementById('b-subject-select').value;
     const title = document.getElementById('b-title').value.trim();
-    const description = document.getElementById('b-desc').value.trim();
+    const description = '';
     const timeLimit = parseInt(document.getElementById('b-timer').value);
     const scheduledDate = document.getElementById('b-date').value;
     const requireGps = document.getElementById('b-gps').value === 'true';
     const showResults = document.getElementById('b-results').value === 'true';
 
-    if (!title || !description || isNaN(timeLimit)) {
+    if (!title || isNaN(timeLimit)) {
       alert('กรุณากรอกข้อมูลส่วนหัวข้อสอบให้ครบถ้วนก่อนส่งบันทึก');
       return;
     }
