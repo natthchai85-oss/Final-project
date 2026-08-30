@@ -823,7 +823,7 @@ function openEnrollmentModal() {
     <div id="enrollment-form-container" style="color: var(--text-primary); font-family: inherit;">
       <form id="enrollment-modal-form" novalidate>
         <div class="form-group" style="text-align: left;">
-          <label for="enroll-subject-code" class="form-label" style="font-weight: 600;">กรอกรหัสประจำวิชา (6 ตัวอักษร เช่น MA101, SC102)</label>
+          <label for="enroll-subject-code" class="form-label" style="font-weight: 600;">กรอกรหัสประจำวิชา</label>
           <div style="display: flex; gap: 8px; margin-top: 6px;">
             <input type="text" id="enroll-subject-code" class="form-control" placeholder="ระบุรหัสวิชาที่อาจารย์กำหนด" maxlength="10" required style="text-transform: uppercase; flex: 1; padding: 8px;">
             <button type="button" class="btn btn-secondary" id="enroll-scan-btn" title="สแกน QR Code" style="padding: 0 12px; font-size: 12.5px;">
@@ -1366,16 +1366,12 @@ function openAddSubjectModal() {
   openModal('สร้างรายวิชาใหม่', `
     <form id="add-subject-form" novalidate>
       <div class="form-group">
-        <label for="sub-code-input" class="form-label">รหัสรายวิชาสะกด (กรุณาระบุ 5-6 ตัวอักษร เช่น MA101, PHY202)</label>
-        <input type="text" id="sub-code-input" class="form-control" placeholder="เช่น ENG101" maxlength="10" required style="text-transform: uppercase;">
+        <label for="sub-code-input" class="form-label">รหัสรายวิชา</label>
+        <input type="text" id="sub-code-input" class="form-control" placeholder="กรอกรหัสรายวิชา" maxlength="10" required style="text-transform: uppercase;">
       </div>
       <div class="form-group">
-        <label for="sub-name-input" class="form-label">ชื่อเต็มรายวิชา (ภาษาไทย/อังกฤษ)</label>
-        <input type="text" id="sub-name-input" class="form-control" placeholder="เช่น ภาษาอังกฤษเบื้องต้น" required>
-      </div>
-      <div class="form-group">
-        <label for="sub-desc-input" class="form-label">คำอธิบายรายวิชา/สังเขปการสอนสั้นๆ</label>
-        <textarea id="sub-desc-input" class="form-control" placeholder="อธิบายวัตถุประสงค์หลักของวิชาเรียน..." style="min-height: 80px;" required></textarea>
+        <label for="sub-name-input" class="form-label">ชื่อเต็มรายวิชา</label>
+        <input type="text" id="sub-name-input" class="form-control" placeholder="กรอกชื่อรายวิชา" required>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
         <button type="button" class="btn btn-secondary" id="sub-cancel-btn">ยกเลิก</button>
@@ -1391,9 +1387,9 @@ function openAddSubjectModal() {
     e.preventDefault();
     const id = document.getElementById('sub-code-input').value.trim().toUpperCase();
     const name = document.getElementById('sub-name-input').value.trim();
-    const description = document.getElementById('sub-desc-input').value.trim();
+    const description = '';
 
-    if (!id || !name || !description) {
+    if (!id || !name) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง');
       return;
     }
