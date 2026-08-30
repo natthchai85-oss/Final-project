@@ -232,7 +232,7 @@ function bindAuthEvents() {
       authMode = 'register';
       document.getElementById('auth-subtitle').innerText = 'สร้างบัญชีผู้ใช้งานใหม่ของระบบ';
       document.getElementById('reg-name-group').style.display = 'block';
-      document.getElementById('reg-role-group').style.display = 'block';
+      document.getElementById('reg-role-group').style.display = 'none';
       document.getElementById('auth-submit-text').innerText = 'สมัครสมาชิก';
       document.getElementById('auth-footer-desc').innerText = 'มีบัญชีผู้ใช้งานอยู่แล้ว?';
       toggleLink.innerText = 'เข้าสู่ระบบที่นี่';
