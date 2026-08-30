@@ -50,9 +50,9 @@ class SupabaseDatabase {
     return mapRows(data);
   }
 
-  async isUsernameTaken(username) {
-    const { data, error } = await supabaseClient.from('users').select('id').ilike('username', username).limit(1);
-    if (error) { console.error('isUsernameTaken error:', error); return false; }
+  async isStudentIdTaken(studentId) {
+    const { data, error } = await supabaseClient.from('users').select('id').ilike('student_id', studentId).limit(1);
+    if (error) { console.error('isStudentIdTaken error:', error); return false; }
     return data && data.length > 0;
   }
 
@@ -62,11 +62,11 @@ class SupabaseDatabase {
     return data ? normalizeRow(data) : null;
   }
 
-  async authenticate(username, password) {
+  async authenticate(studentId, password) {
     const { data, error } = await supabaseClient
       .from('users')
       .select('*')
-      .ilike('username', username)
+      .ilike('student_id', studentId)
       .eq('password', password)
       .single();
 

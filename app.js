@@ -250,18 +250,18 @@ function bindAuthEvents() {
   // ส่งข้อมูลฟอร์ม
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = document.getElementById('auth-username').value.trim();
+    const studentId = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value;
     const name = document.getElementById('auth-name').value.trim();
 
-    if (!username || !password) {
+    if (!studentId || !password) {
       alert('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน');
       return;
     }
 
     if (authMode === 'login') {
       try {
-        const user = await window.db.authenticate(username, password);
+        const user = await window.db.authenticate(studentId, password);
         if (user) {
           currentUser = user;
           sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -290,13 +290,13 @@ function bindAuthEvents() {
         const role = roleElement.getAttribute('data-role');
 
         // ตรวจชื่อผู้ใช้ซ้ำ (คิวรีเดียว ไม่ดึง users ทั้งตาราง)
-        if (await window.db.isUsernameTaken(username)) {
+        if (await window.db.isStudentIdTaken(studentId)) {
           alert('รหัสนักศึกษานี้ถูกใช้งานในระบบแล้ว กรุณาตรวจสอบอีกครั้ง');
           return;
         }
 
         const newUser = await window.db.addUser({
-          username,
+          studentId,
           password,
           name,
           role
@@ -1463,7 +1463,7 @@ window.manageSubjectStudents = async function (subjectId, subjectName) {
           <thead>
             <tr>
               <th>ชื่อ-นามสกุล</th>
-              <th>Username</th>
+              <th>รหัสนักศึกษา</th>
               <th>วันที่เข้าร่วม</th>
               <th>การกระทำ</th>
             </tr>
@@ -1478,7 +1478,7 @@ window.manageSubjectStudents = async function (subjectId, subjectName) {
       html += `
         <tr>
           <td><strong style="color: var(--text-primary);">${st.name}</strong></td>
-          <td>${st.username}</td>
+          <td>${st.studentId}</td>
           <td>${enrolledDate}</td>
           <td>
             <button class="btn btn-danger" onclick="removeStudentFromSubject('${st.id}', '${st.name}', '${subjectId}', '${subjectName}')" style="padding: 4px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;">
@@ -2441,14 +2441,14 @@ async function renderAdminUsers(container) {
     </div>
 
     <div class="glass-panel" style="padding:16px; margin-bottom:20px; display:flex; gap:16px;">
-      <input type="text" id="admin-user-search-input" class="form-control" placeholder="ค้นหาด้วย ชื่อผู้ใช้ หรือ ชื่อจริง..." style="max-width:320px;">
+      <input type="text" id="admin-user-search-input" class="form-control" placeholder="ค้นหาด้วย รหัสนักศึกษา หรือ ชื่อจริง..." style="max-width:320px;">
     </div>
 
     <div class="data-table-container glass-panel">
       <table class="data-table" id="admin-users-table">
         <thead>
           <tr>
-            <th>ชื่อผู้ใช้ (Username)</th>
+            <th>รหัสนักศึกษา (Student ID)</th>
             <th>ชื่อ-นามสกุลจริง</th>
             <th>บทบาท</th>
             <th>สถานะการใช้</th>
@@ -2479,7 +2479,7 @@ async function renderAdminUsersTable(filterText) {
   const users = await window.db.getUsers();
 
   const filtered = users.filter(u =>
-    u.username.toLowerCase().includes(filterText) ||
+    (u.studentId || '').toLowerCase().includes(filterText) ||
     u.name.toLowerCase().includes(filterText)
   );
 
@@ -2487,7 +2487,7 @@ async function renderAdminUsersTable(filterText) {
   filtered.forEach(u => {
     html += `
       <tr>
-        <td><strong>${u.username}</strong></td>
+        <td><strong>${u.studentId || ''}</strong></td>
         <td>${u.name}</td>
         <td>
           <span class="badge-role role-${u.role}">
@@ -2503,7 +2503,7 @@ async function renderAdminUsersTable(filterText) {
           <div style="display:flex; gap:8px;">
             <button class="btn btn-secondary" onclick="openAdminEditUserModal('${u.id}')" style="padding:6px 12px; font-size:11.5px;">แก้ไข</button>
             <button class="btn btn-warning" onclick="toggleUserStatus('${u.id}', ${u.active})" style="padding:6px 12px; font-size:11.5px;">${u.active ? 'ระงับ' : 'เปิด'}</button>
-            ${u.username === 'admin' ? '' : `<button class="btn btn-danger" onclick="deleteUserByAdmin('${u.id}', '${u.username}')" style="padding:6px; font-size:11.5px;"><i class="lucide-icon" data-lucide="trash-2" style="width:12px; height:12px;"></i></button>`}
+            ${u.studentId === 'admin' ? '' : `<button class="btn btn-danger" onclick="deleteUserByAdmin('${u.id}', '${u.studentId}')" style="padding:6px; font-size:11.5px;"><i class="lucide-icon" data-lucide="trash-2" style="width:12px; height:12px;"></i></button>`}
           </div>
         </td>
       </tr>
@@ -2519,10 +2519,10 @@ window.toggleUserStatus = async function (userId, currentStatus) {
   renderAdminUsersTable(document.getElementById('admin-user-search-input').value.trim().toLowerCase());
 };
 
-window.deleteUserByAdmin = async function (userId, username) {
-  if (confirm(`คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้ "${username}" ใช่หรือไม่?\nข้อมูลการเรียน คอร์ส และผลการสอบทั้งหมดของนักเรียนจะหายไปด้วย!`)) {
+window.deleteUserByAdmin = async function (userId, studentId) {
+  if (confirm(`คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้ "${studentId}" ใช่หรือไม่?\nข้อมูลการเรียน คอร์ส และผลการสอบทั้งหมดของนักเรียนจะหายไปด้วย!`)) {
     await window.db.deleteUser(userId);
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบผู้ใช้', `แอดมินลบบัญชีผู้ใช้ "${username}" (${userId})`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ลบผู้ใช้', `แอดมินลบบัญชีผู้ใช้ "${studentId}" (${userId})`);
     renderAdminUsers(document.getElementById('main-content-view'));
   }
 };
@@ -2543,8 +2543,8 @@ function openAdminCreateUserModal() {
         <input type="text" id="adm-c-name" class="form-control" placeholder="เช่น ดร.นิเทศ ขยันเรียน" required>
       </div>
       <div class="form-group">
-        <label for="adm-c-username" class="form-label">ชื่อล็อกอิน (Username)</label>
-        <input type="text" id="adm-c-username" class="form-control" placeholder="ชื่อไอดีล็อกอินภาษาอังกฤษ" required>
+        <label for="adm-c-username" class="form-label">รหัสนักศึกษา (หรือไอดีล็อกอินครู)</label>
+        <input type="text" id="adm-c-username" class="form-control" placeholder="กรอกรหัสนักศึกษา/ไอดีล็อกอิน" required>
       </div>
       <div class="form-group">
         <label for="adm-c-password" class="form-label">รหัสผ่านเริ่มต้น (Password)</label>
@@ -2562,30 +2562,30 @@ function openAdminCreateUserModal() {
     e.preventDefault();
     const role = document.getElementById('adm-c-role').value;
     const name = document.getElementById('adm-c-name').value.trim();
-    const username = document.getElementById('adm-c-username').value.trim();
+    const studentId = document.getElementById('adm-c-username').value.trim();
     const password = document.getElementById('adm-c-password').value;
 
-    if (!name || !username || !password) {
+    if (!name || !studentId || !password) {
       alert('กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง');
       return;
     }
 
     // เช็ค ID ซ้ำ
     const users = await window.db.getUsers();
-    const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    const exists = users.some(u => (u.studentId || '').toLowerCase() === studentId.toLowerCase());
     if (exists) {
-      alert('ชื่อ Username นี้ถูกใช้งานแล้ว โปรดเลือกตัวตนไอดีใหม่');
+      alert('รหัสนักศึกษา/ไอดีล็อกอินนี้ถูกใช้งานแล้ว โปรดระบุใหม่');
       return;
     }
 
     await window.db.addUser({
-      username,
+      studentId,
       password,
       name,
       role
     });
 
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แอดมินสร้างผู้ใช้', `สร้างไอดีล็อกอิน "${username}" บทบาท ${role}`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แอดมินสร้างผู้ใช้', `สร้างไอดีล็อกอิน "${studentId}" บทบาท ${role}`);
     alert(`สร้างบัญชีระบบของ "${name}" สำเร็จพร้อมใช้งาน!`);
     closeModal();
     renderAdminUsers(document.getElementById('main-content-view'));
@@ -2611,8 +2611,8 @@ window.openAdminEditUserModal = async function (userId) {
         <input type="text" id="adm-e-name" class="form-control" value="${escapeHtml(u.name)}" required>
       </div>
       <div class="form-group">
-        <label for="adm-e-username" class="form-label">ชื่อผู้ใช้งานล็อกอิน (ไม่รองรับการแก้ไขโดยตรง)</label>
-        <input type="text" id="adm-e-username" class="form-control" value="${escapeHtml(u.username)}" readonly style="opacity:0.6;">
+        <label for="adm-e-username" class="form-label">รหัสนักศึกษา/ไอดีล็อกอิน (ไม่รองรับการแก้ไขโดยตรง)</label>
+        <input type="text" id="adm-e-username" class="form-control" value="${escapeHtml(u.studentId || '')}" readonly style="opacity:0.6;">
       </div>
       <div class="form-group">
         <label for="adm-e-password" class="form-label">เปลี่ยนรหัสผ่านผู้ใช้</label>
@@ -2638,7 +2638,7 @@ window.openAdminEditUserModal = async function (userId) {
     }
 
     await window.db.updateUser(userId, { name, password, role });
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.username}" เปลี่ยนบทบาทเป็น ${role}`);
+    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อมูลผู้ใช้', `แอดมินแก้ไขข้อมูลของ "${u.studentId || ''}" เปลี่ยนบทบาทเป็น ${role}`);
 
     alert('บันทึกการแก้ไขข้อมูลผู้ใช้งานเสร็จสิ้น!');
     closeModal();

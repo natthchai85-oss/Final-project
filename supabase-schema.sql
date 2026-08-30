@@ -7,7 +7,7 @@
 -- 1. ตาราง users (ข้อมูลผู้ใช้งาน)
 CREATE TABLE IF NOT EXISTS public.users (
     id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
+    student_id TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('student', 'teacher', 'admin')),
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 );
 
 -- สร้างดัชนี (Indexes) เพื่อเพิ่มความเร็วในการคิวรีข้อมูล
-CREATE INDEX IF NOT EXISTS idx_users_username ON public.users(username);
+CREATE INDEX IF NOT EXISTS idx_users_student_id ON public.users(student_id);
 CREATE INDEX IF NOT EXISTS idx_subjects_teacher ON public.subjects(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_student ON public.enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_subject ON public.enrollments(subject_id);
