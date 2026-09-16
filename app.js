@@ -9,9 +9,9 @@ function refreshIcons(root) {
 // -------------------------------------------------------------
 // 1. สถานะแอปพลิเคชันหลัก (Application State)
 // -------------------------------------------------------------
-let currentUser = null;
+let currentUser = (typeof window !== 'undefined' && window.currentUser) ? window.currentUser : null;
 let currentView = 'dashboard';
-let activeExam = null;
+let activeExam = (typeof window !== 'undefined' && window.activeExam) ? window.activeExam : null;
 let examSession = {
   answers: {},
   secondsLeft: 0,
@@ -1239,7 +1239,12 @@ window.viewAttemptDetails = async function (attemptId) {
             <strong style="color: var(--primary);">คำถามข้อที่ ${idx + 1} (${q.points} คะแนน)</strong>
             ${checkIconHtml}
           </div>
-          <p style="margin-bottom: 10px; font-weight: 500;">${q.text}</p>
+          <p style="margin-bottom: 10px; font-weight: 500;">${escapeHtml(q.text)}</p>
+          ${q.image ? `
+            <div style="text-align: center; margin: 10px 0 14px;">
+              <img src="${escapeHtml(q.image)}" alt="รูปภาพคำถามข้อที่ ${idx + 1}" style="max-height: 220px; max-width: 100%; border-radius: 6px; border: 1px solid var(--border-glass); cursor: pointer; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'รูปภาพคำถามข้อที่ ${idx + 1}')" title="คลิกดูภาพขยาย">
+            </div>
+          ` : ''}
       `;
 
       if (isChoice) {
@@ -1534,6 +1539,7 @@ window.removeStudentFromSubject = async function (studentId, studentName, subjec
 // 11. คุณครู - จัดการข้อสอบและระบบสร้างข้อสอบ (Teacher Exam Builder)
 // -------------------------------------------------------------
 let tempQuestionsList = []; // เก็บคำถามชั่วคราวขณะเปิดฟอร์มสร้างข้อสอบ
+let editingExamId = null; // เก็บ examId เมื่ออยู่ในโหมดแก้ไขข้อสอบชุดเดิม
 
 async function renderTeacherExams(container) {
   const [teacherSubjects, exams, allAttempts] = await Promise.all([
@@ -1593,11 +1599,17 @@ async function renderTeacherExams(container) {
           <div class="item-card-meta">
             <span>จำนวนผู้ส่งกระดาษแล้ว: <strong>${attemptsCount} แผ่น</strong></span>
           </div>
-          <div class="item-card-footer" style="margin-top:auto;">
+          <div class="item-card-footer" style="margin-top:auto; display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="previewExamByTeacher('${ex.id}')" style="padding:8px; font-size:11.5px;" title="ดูตัวอย่างข้อสอบ">
+              <i class="lucide-icon" data-lucide="eye" style="width:12px; height:12px;"></i> ดูตัวอย่าง
+            </button>
+            <button class="btn btn-secondary" onclick="openEditExamView('${ex.id}')" style="padding:8px; font-size:11.5px; color:var(--primary);" title="แก้ไขชุดข้อสอบนี้">
+              <i class="lucide-icon" data-lucide="edit-3" style="width:12px; height:12px;"></i> แก้ไข
+            </button>
             <button class="btn btn-secondary" onclick="toggleExamStatus('${ex.id}', ${ex.active})" style="padding:8px; font-size:11.5px; flex: 1;">
               <i class="lucide-icon" data-lucide="${ex.active ? 'lock' : 'unlock'}" style="width:12px; height:12px;"></i> ${ex.active ? 'ปิดสอบ' : 'เปิดสอบ'}
             </button>
-            <button class="btn btn-danger" onclick="deleteExamByTeacher('${ex.id}', '${ex.title}')" style="padding:8px; font-size:11.5px;">
+            <button class="btn btn-danger" onclick="deleteExamByTeacher('${ex.id}', '${ex.title}')" style="padding:8px; font-size:11.5px;" title="ลบชุดข้อสอบ">
               <i class="lucide-icon" data-lucide="trash" style="width:12px; height:12px;"></i>
             </button>
           </div>
@@ -1631,29 +1643,136 @@ window.deleteExamByTeacher = async function (examId, examTitle) {
   }
 };
 
-async function openCreateExamView() {
-  tempQuestionsList = [
-    {
-      id: 'temp_q_1',
-      type: 'choice',
-      text: 'คำถามข้อที่ 1 ปรนัย?',
-      points: 2,
-      options: ['ตัวเลือกที่ 1', 'ตัวเลือกที่ 2', 'ตัวเลือกที่ 3', 'ตัวเลือกที่ 4'],
-      correctAnswer: 0
+window.previewExamByTeacher = async function (examId) {
+  const exam = await window.db.getExam(examId);
+  if (!exam) {
+    alert('ไม่พบข้อมูลชุดข้อสอบนี้ในระบบ');
+    return;
+  }
+
+  let html = `
+    <div style="color: var(--text-primary);">
+      <div style="background-color: var(--bg-secondary); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 20px; border: 1px solid var(--border-glass);">
+        <h4 style="font-size: 16px; margin-bottom: 6px; color: var(--primary);">${escapeHtml(exam.title)}</h4>
+        <div style="display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap;">
+          <span><i class="lucide-icon" data-lucide="clock" style="width:12px; height:12px; vertical-align:middle;"></i> เวลาสอบ: <strong>${exam.timeLimit} นาที</strong></span>
+          <span><i class="lucide-icon" data-lucide="help-circle" style="width:12px; height:12px; vertical-align:middle;"></i> จำนวนคำถาม: <strong>${(exam.questions || []).length} ข้อ</strong></span>
+          <span><i class="lucide-icon" data-lucide="map-pin" style="width:12px; height:12px; vertical-align:middle;"></i> GPS Lock: <strong>${exam.requireGps ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</strong></span>
+        </div>
+      </div>
+
+      <div style="max-height: 55vh; overflow-y: auto; padding-right: 8px;">
+  `;
+
+  (exam.questions || []).forEach((q, idx) => {
+    const isChoice = q.type === 'choice';
+    html += `
+      <div style="background-color: var(--bg-tertiary); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px; font-size: 13px;">
+          <strong style="color: var(--primary);">ข้อที่ ${idx + 1} (${isChoice ? 'ปรนัย' : 'อัตนัย'} - ${q.points} คะแนน)</strong>
+          ${q.image ? `<span class="badge-role" style="font-size:10px; background-color: rgba(99,102,241,0.15); color:var(--primary); display:inline-flex; align-items:center; gap:4px;"><i class="lucide-icon" data-lucide="image" style="width:11px; height:11px;"></i> มีรูปประกอบ</span>` : ''}
+        </div>
+        <p style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">${escapeHtml(q.text)}</p>
+
+        ${q.image ? `
+          <div style="text-align: center; margin: 12px 0;">
+            <img src="${escapeHtml(q.image)}" alt="รูปข้อที่ ${idx + 1}" style="max-height: 220px; max-width: 100%; border-radius: 6px; border: 1px solid var(--border-glass); cursor: pointer; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'รูปภาพคำถามข้อที่ ${idx + 1}')" title="คลิกดูรูปขยาย">
+          </div>
+        ` : ''}
+    `;
+
+    if (isChoice) {
+      html += `<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">`;
+      (q.options || []).forEach((opt, oIdx) => {
+        const isAns = oIdx === q.correctAnswer;
+        html += `
+          <div style="padding: 6px 10px; border-radius: 4px; font-size: 12.5px; background-color: ${isAns ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-secondary)'}; border: 1px solid ${isAns ? 'var(--success)' : 'transparent'}; color: ${isAns ? 'var(--success)' : 'inherit'}; font-weight: ${isAns ? '600' : 'normal'};">
+            ตัวเลือกที่ ${oIdx + 1}: ${escapeHtml(opt)} ${isAns ? ' ✓ (เฉลยที่ถูกต้อง)' : ''}
+          </div>
+        `;
+      });
+      html += `</div>`;
+    } else {
+      html += `
+        <div style="background-color: var(--bg-secondary); padding: 10px 12px; border-radius: 4px; font-size: 12.5px; margin-top:8px; border-left: 3px solid var(--accent-purple);">
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:2px;">แนวคำตอบ / คีย์เวิร์ดเฉลย:</div>
+          <div style="color:var(--text-secondary);">${escapeHtml(q.correctAnswer || '(ไม่มีระบุ)')}</div>
+        </div>
+      `;
     }
-  ];
+
+    html += `</div>`;
+  });
+
+  html += `
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 16px;">
+        <button type="button" class="btn btn-primary" onclick="closeModal(); openEditExamView('${exam.id}');" style="font-size:12px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px;">
+          <i class="lucide-icon" data-lucide="edit-3" style="width:13px; height:13px;"></i>
+          <span>แก้ไขชุดข้อสอบนี้</span>
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  `;
+
+  openModal(`ดูตัวอย่างชุดข้อสอบ: ${exam.title}`, html);
+  refreshIcons(document.getElementById('modal-body-content'));
+};
+
+async function openCreateExamView() {
+  await openExamBuilderView(null);
+}
+
+window.openEditExamView = async function (examId) {
+  await openExamBuilderView(examId);
+};
+
+async function openExamBuilderView(examId = null) {
+  editingExamId = examId;
+  let existingExam = null;
+
+  if (editingExamId) {
+    existingExam = await window.db.getExam(editingExamId);
+    if (!existingExam) {
+      alert('ไม่พบข้อมูลชุดข้อสอบที่ต้องการแก้ไขในระบบ');
+      return;
+    }
+    tempQuestionsList = (existingExam.questions && existingExam.questions.length > 0)
+      ? JSON.parse(JSON.stringify(existingExam.questions))
+      : [];
+  } else {
+    tempQuestionsList = [
+      {
+        id: 'temp_q_1',
+        type: 'choice',
+        text: 'คำถามข้อที่ 1 ปรนัย?',
+        image: '',
+        points: 2,
+        options: ['ตัวเลือกที่ 1', 'ตัวเลือกที่ 2', 'ตัวเลือกที่ 3', 'ตัวเลือกที่ 4'],
+        correctAnswer: 0
+      }
+    ];
+  }
 
   const teacherSubjects = await window.db.getSubjectsByTeacher(currentUser.id);
   const contentArea = document.getElementById('main-content-view');
 
+  const selectedSubjectId = existingExam ? existingExam.subjectId : (teacherSubjects[0] ? teacherSubjects[0].id : '');
   let subjectOptionsHtml = '';
   teacherSubjects.forEach(s => {
-    subjectOptionsHtml += `<option value="${s.id}">${s.name} (${s.id})</option>`;
+    subjectOptionsHtml += `<option value="${s.id}" ${s.id === selectedSubjectId ? 'selected' : ''}>${s.name} (${s.id})</option>`;
   });
+
+  const isEdit = !!editingExamId;
+  const viewTitle = isEdit
+    ? `แก้ไขชุดข้อสอบ: ${escapeHtml(existingExam.title)}`
+    : `สร้างชุดข้อสอบออนไลน์ตัวใหม่`;
+  const submitText = isEdit ? `บันทึกการแก้ไขข้อสอบ` : `บันทึกและเผยแพร่ข้อสอบ`;
 
   contentArea.innerHTML = `
     <div class="view-title-container">
-      <h2><i class="lucide-icon" data-lucide="plus-circle" style="vertical-align:middle; margin-right:8px;"></i>สร้างชุดข้อสอบออนไลน์ตัวใหม่</h2>
+      <h2><i class="lucide-icon" data-lucide="${isEdit ? 'edit-3' : 'plus-circle'}" style="vertical-align:middle; margin-right:8px;"></i>${viewTitle}</h2>
       <button type="button" class="btn btn-secondary" id="builder-back-btn">ย้อนกลับ</button>
     </div>
 
@@ -1668,20 +1787,18 @@ async function openCreateExamView() {
           </div>
           <div class="form-group">
             <label for="b-title" class="form-label">หัวข้อชื่อแบบทดสอบ</label>
-            <input type="text" id="b-title" class="form-control" placeholder="เช่น สอบปลายภาคเทอม 1" required>
+            <input type="text" id="b-title" class="form-control" value="${escapeHtml(existingExam ? existingExam.title : '')}" placeholder="เช่น สอบปลายภาคเทอม 1" required>
           </div>
         </div>
-
-
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div class="form-group">
             <label for="b-timer" class="form-label">จำกัดระยะเวลา (นาที)</label>
-            <input type="number" id="b-timer" class="form-control" value="20" min="1" max="180" required>
+            <input type="number" id="b-timer" class="form-control" value="${existingExam ? existingExam.timeLimit : 20}" min="1" max="180" required>
           </div>
           <div class="form-group">
             <label for="b-date" class="form-label">กำหนดการสอบเริ่ม (วัน-เวลาเปิดสอบ)</label>
-            <input type="datetime-local" id="b-date" class="form-control" value="2026-05-21T09:00" required>
+            <input type="datetime-local" id="b-date" class="form-control" value="${existingExam && existingExam.scheduledDate ? escapeHtml(existingExam.scheduledDate) : '2026-05-21T09:00'}" required>
           </div>
         </div>
 
@@ -1689,15 +1806,15 @@ async function openCreateExamView() {
           <div class="form-group">
             <label for="b-gps" class="form-label">ขอบเขตสถานที่ทำข้อสอบ (GPS Location Lock)</label>
             <select id="b-gps" class="form-control">
-              <option value="false">สอบที่ไหนก็ได้ (ไม่มีการจำกัดพื้นที่)</option>
-              <option value="true">เฉพาะภายในวิทยาลัยเทคนิคตากเท่านั้น (รัศมี 500 เมตร)</option>
+              <option value="false" ${existingExam && !existingExam.requireGps ? 'selected' : ''}>สอบที่ไหนก็ได้ (ไม่มีการจำกัดพื้นที่)</option>
+              <option value="true" ${existingExam && existingExam.requireGps ? 'selected' : ''}>เฉพาะภายในวิทยาลัยเทคนิคตากเท่านั้น (รัศมี 500 เมตร)</option>
             </select>
           </div>
           <div class="form-group">
             <label for="b-results" class="form-label">การแสดงผลคะแนนและเฉลยหลังสอบ (Show Results)</label>
             <select id="b-results" class="form-control">
-              <option value="true">อนุญาตให้นักเรียนดูคะแนนและเฉลยคำตอบได้ทันทีหลังสอบเสร็จ</option>
-              <option value="false">ไม่อนุญาต (ซ่อนคะแนนและเฉลยคำตอบทั้งหมด)</option>
+              <option value="true" ${!existingExam || existingExam.showResults !== false ? 'selected' : ''}>อนุญาตให้นักเรียนดูคะแนนและเฉลยคำตอบได้ทันทีหลังสอบเสร็จ</option>
+              <option value="false" ${existingExam && existingExam.showResults === false ? 'selected' : ''}>ไม่อนุญาต (ซ่อนคะแนนและเฉลยคำตอบทั้งหมด)</option>
             </select>
           </div>
         </div>
@@ -1726,7 +1843,7 @@ async function openCreateExamView() {
 
         <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border-glass); padding-top:24px; margin-top:32px;">
           <button type="button" class="btn btn-secondary" id="builder-cancel-btn">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary">บันทึกและเผยแพร่ข้อสอบ</button>
+          <button type="submit" class="btn btn-primary">${submitText}</button>
         </div>
       </form>
     </div>
@@ -1740,7 +1857,7 @@ async function openCreateExamView() {
     importGFormBtn.addEventListener('click', openImportGoogleFormModal);
   }
 
-  const goBackToExams = () => { switchView('teacher_exams'); };
+  const goBackToExams = () => { editingExamId = null; switchView('teacher_exams'); };
   document.getElementById('builder-back-btn').addEventListener('click', goBackToExams);
   document.getElementById('builder-cancel-btn').addEventListener('click', goBackToExams);
 
@@ -1754,7 +1871,7 @@ async function openCreateExamView() {
 
     const subjectId = document.getElementById('b-subject-select').value;
     const title = document.getElementById('b-title').value.trim();
-    const description = '';
+    const description = existingExam ? (existingExam.description || '') : '';
     const timeLimit = parseInt(document.getElementById('b-timer').value);
     const scheduledDate = document.getElementById('b-date').value;
     const requireGps = document.getElementById('b-gps').value === 'true';
@@ -1770,21 +1887,40 @@ async function openCreateExamView() {
       return;
     }
 
-    // ทำการเซฟข้อสอบชุดใหม่ลง Local Database
-    await window.db.addExam({
-      subjectId,
-      title,
-      description,
-      timeLimit,
-      scheduledDate,
-      requireGps,
-      showResults,
-      questions: tempQuestionsList
-    });
+    if (editingExamId) {
+      // โหมดแก้ไขข้อสอบเดิม
+      await window.db.updateExam(editingExamId, {
+        subjectId,
+        title,
+        description,
+        timeLimit,
+        scheduledDate,
+        requireGps,
+        showResults,
+        questions: tempQuestionsList
+      });
 
-    await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างข้อสอบ', `ครูสร้างข้อสอบใหม่เรื่อง "${title}" วิชา ${subjectId}`);
-    alert(`สร้างและจัดระบบเผยแพร่ข้อสอบชุด "${title}" ลงห้องเรียนเสร็จสิ้น!`);
-    await switchView('teacher_exams');
+      await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'แก้ไขข้อสอบ', `ครูแก้ไขข้อสอบเรื่อง "${title}" (${editingExamId})`);
+      alert(`บันทึกการแก้ไขชุดข้อสอบ "${title}" สำเร็จเรียบร้อย!`);
+      editingExamId = null;
+      await switchView('teacher_exams');
+    } else {
+      // โหมดสร้างข้อสอบใหม่
+      await window.db.addExam({
+        subjectId,
+        title,
+        description,
+        timeLimit,
+        scheduledDate,
+        requireGps,
+        showResults,
+        questions: tempQuestionsList
+      });
+
+      await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'สร้างข้อสอบ', `ครูสร้างข้อสอบใหม่เรื่อง "${title}" วิชา ${subjectId}`);
+      alert(`สร้างและจัดระบบเผยแพร่ข้อสอบชุด "${title}" ลงห้องเรียนเสร็จสิ้น!`);
+      await switchView('teacher_exams');
+    }
   });
 }
 
@@ -1813,6 +1949,58 @@ async function renderBuilderQuestions() {
             <label class="form-label">คะแนนเต็มข้อนี้</label>
             <input type="number" class="form-control question-points-input" value="${q.points}" min="0.5" step="0.5" required>
           </div>
+        </div>
+
+        <!-- ส่วนแนบรูปภาพประกอบคำถาม -->
+        <div class="question-image-uploader-section">
+          <div class="question-image-header">
+            <span class="question-image-label">
+              <i class="lucide-icon" data-lucide="image" style="width:14px; height:14px; color:var(--primary);"></i>
+              รูปภาพประกอบคำถาม (ถ้ามี)
+            </span>
+            ${q.image ? `
+              <button type="button" class="btn btn-danger" style="padding: 2px 8px; font-size: 11px; display:inline-flex; align-items:center; gap:4px;" onclick="removeQuestionImage('${q.id}')">
+                <i class="lucide-icon" data-lucide="trash-2" style="width:11px; height:11px;"></i> ลบรูป
+              </button>
+            ` : ''}
+          </div>
+
+          ${q.image ? `
+            <div class="question-image-preview-card">
+              <img src="${escapeHtml(q.image)}" alt="รูปประกอบ" class="question-image-preview-thumb" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'รูปภาพคำถามข้อที่ ${idx + 1}')" title="คลิกเพื่อดูรูปภาพขนาดใหญ่">
+              <div style="flex: 1; min-width: 0;">
+                <div style="display:flex; align-items:center; gap:6px; color:var(--success); font-weight:600; font-size:12px; margin-bottom:4px;">
+                  <i class="lucide-icon" data-lucide="check-circle-2" style="width:14px; height:14px;"></i> แนบรูปภาพเรียบร้อย
+                </div>
+                <p style="color:var(--text-muted); font-size:11px; margin-bottom:8px; line-height:1.4;">รูปภาพนี้จะปรากฏให้นักเรียนเห็นระหว่างทำข้อสอบ</p>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; display:inline-flex; align-items:center; gap:4px;" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'รูปภาพคำถามข้อที่ ${idx + 1}')">
+                    <i class="lucide-icon" data-lucide="zoom-in" style="width:11px; height:11px;"></i> ดูภาพขยาย
+                  </button>
+                  <button type="button" class="btn btn-secondary" style="padding:4px 8px; font-size:11px; display:inline-flex; align-items:center; gap:4px;" onclick="document.getElementById('q-file-${q.id}').click()">
+                    <i class="lucide-icon" data-lucide="upload" style="width:11px; height:11px;"></i> เปลี่ยนรูปใหม่
+                  </button>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="question-image-actions">
+              <button type="button" class="btn btn-secondary" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;" onclick="document.getElementById('q-file-${q.id}').click()">
+                <i class="lucide-icon" data-lucide="upload" style="width:13px; height:13px;"></i>
+                <span>อัปโหลดรูปภาพ</span>
+              </button>
+              <span style="font-size:11px; color:var(--text-muted);">หรือวางลิงก์รูปภาพ:</span>
+              <div style="flex: 1; min-width: 200px; display:flex; gap:6px;">
+                <input type="url" id="q-url-${q.id}" class="form-control question-image-url-input" placeholder="https://... (URL รูปภาพ)" style="font-size:11.5px; padding:5px 10px;" onkeydown="if(event.key==='Enter'){event.preventDefault();setQuestionImageUrl('${q.id}', this.value);}">
+                <button type="button" class="btn btn-secondary" style="padding:5px 10px; font-size:11.5px; white-space:nowrap;" onclick="setQuestionImageUrl('${q.id}', document.getElementById('q-url-${q.id}').value)">
+                  ตกลง
+                </button>
+              </div>
+            </div>
+          `}
+
+          <input type="file" id="q-file-${q.id}" accept="image/*" style="display:none;" onchange="handleQuestionImageUpload('${q.id}', this)">
+          <input type="hidden" class="question-image-hidden-input" value="${escapeHtml(q.image || '')}">
         </div>
     `;
 
@@ -1854,6 +2042,7 @@ window.addNewBuilderQuestion = function (type) {
       id,
       type: 'choice',
       text: '',
+      image: '',
       points: 2,
       options: ['', '', '', ''],
       correctAnswer: 0
@@ -1862,6 +2051,7 @@ window.addNewBuilderQuestion = function (type) {
       id,
       type: 'subjective',
       text: '',
+      image: '',
       points: 4,
       correctAnswer: ''
     };
@@ -1888,8 +2078,15 @@ function saveBuilderFormValuesToMemory() {
     if (qIndex === -1) return;
 
     // คำอธิบายโจทย์และคะแนน
-    tempQuestionsList[qIndex].text = item.querySelector('.question-text-input').value;
-    tempQuestionsList[qIndex].points = parseFloat(item.querySelector('.question-points-input').value) || 1;
+    const textInp = item.querySelector('.question-text-input');
+    if (textInp) tempQuestionsList[qIndex].text = textInp.value;
+
+    const pointsInp = item.querySelector('.question-points-input');
+    if (pointsInp) tempQuestionsList[qIndex].points = parseFloat(pointsInp.value) || 1;
+
+    // ซิงค์รูปภาพ
+    const imgInp = item.querySelector('.question-image-hidden-input');
+    if (imgInp) tempQuestionsList[qIndex].image = imgInp.value;
 
     if (tempQuestionsList[qIndex].type === 'choice') {
       // โหลดข้อเขียนช้อยส์
@@ -1907,10 +2104,102 @@ function saveBuilderFormValuesToMemory() {
       });
     } else {
       // สำหรับอัตนัย
-      tempQuestionsList[qIndex].correctAnswer = item.querySelector('.question-subjective-ans-input').value;
+      const subjInp = item.querySelector('.question-subjective-ans-input');
+      if (subjInp) tempQuestionsList[qIndex].correctAnswer = subjInp.value;
     }
   });
 }
+
+// ฟังก์ชันจัดการรูปภาพสำหรับคำถามในระบบสร้างข้อสอบ
+window.handleQuestionImageUpload = function (questionId, fileInput) {
+  if (!fileInput.files || !fileInput.files[0]) return;
+  const file = fileInput.files[0];
+
+  if (!file.type.startsWith('image/')) {
+    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, WebP, GIF)');
+    fileInput.value = '';
+    return;
+  }
+
+  saveBuilderFormValuesToMemory();
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const img = new Image();
+    img.onload = function () {
+      // ปรับขนาดภาพอัตโนมัติหากใหญ่เกิน 1000px เพื่อประหยัดพื้นที่จัดเก็บและโหลดไว
+      const maxDim = 1000;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const isPng = file.type === 'image/png';
+      const compressedDataUrl = isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.82);
+
+      const target = tempQuestionsList.find(q => q.id === questionId);
+      if (target) {
+        target.image = compressedDataUrl;
+      }
+      renderBuilderQuestions();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.setQuestionImageUrl = function (questionId, url) {
+  const cleanUrl = (url || '').trim();
+  if (!cleanUrl) {
+    alert('กรุณากรอก URL ลิงก์รูปภาพ');
+    return;
+  }
+  saveBuilderFormValuesToMemory();
+  const target = tempQuestionsList.find(q => q.id === questionId);
+  if (target) {
+    target.image = cleanUrl;
+  }
+  renderBuilderQuestions();
+};
+
+window.removeQuestionImage = function (questionId) {
+  saveBuilderFormValuesToMemory();
+  const target = tempQuestionsList.find(q => q.id === questionId);
+  if (target) {
+    target.image = '';
+  }
+  renderBuilderQuestions();
+};
+
+window.openExamImageZoom = function (src, title) {
+  if (!src) return;
+  const modalHtml = `
+    <div class="image-zoom-overlay-container">
+      <img src="${escapeHtml(src)}" alt="${escapeHtml(title || 'รูปภาพประกอบ')}" class="image-zoom-img">
+      <div style="margin-top: 14px; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+        ${escapeHtml(title || 'รูปภาพประกอบคำถาม')}
+      </div>
+      <button type="button" class="btn btn-secondary" onclick="closeModal()" style="margin-top: 14px; padding: 6px 16px;">
+        ปิดหน้าต่าง
+      </button>
+    </div>
+  `;
+  openModal(title || 'รูปภาพประกอบข้อสอบ', modalHtml);
+};
 
 function escapeHtml(text) {
   if (!text) return '';
@@ -2056,7 +2345,12 @@ window.openTeacherGradeOverlay = async function (attemptId) {
 
     html += `
         </div>
-        <p style="font-weight:500; margin-bottom:10px;">${q.text}</p>
+        <p style="font-weight:500; margin-bottom:10px;">${escapeHtml(q.text)}</p>
+        ${q.image ? `
+          <div style="text-align: center; margin: 10px 0 14px;">
+            <img src="${escapeHtml(q.image)}" alt="รูปข้อที่ ${idx + 1}" style="max-height: 220px; max-width: 100%; border-radius: 6px; border: 1px solid var(--border-glass); cursor: pointer; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'รูปภาพคำถามข้อที่ ${idx + 1}')" title="คลิกดูรูปขยาย">
+          </div>
+        ` : ''}
     `;
 
     if (isChoice) {
@@ -3016,10 +3310,13 @@ function startExamTimer() {
 }
 
 async function renderExamQuestionsNavigationGrid() {
+  const curExam = activeExam || (typeof window !== 'undefined' ? window.activeExam : null);
+  if (!curExam || !curExam.questions) return;
   const grid = document.getElementById('questions-navigation-grid');
+  if (!grid) return;
   let html = '';
 
-  activeExam.questions.forEach((q, idx) => {
+  curExam.questions.forEach((q, idx) => {
     const isAnswered = examSession.answers[q.id] !== undefined && examSession.answers[q.id] !== '';
     let btnClass = 'question-nav-btn';
 
@@ -3033,14 +3330,20 @@ async function renderExamQuestionsNavigationGrid() {
 }
 
 async function renderExamQuestion(index) {
+  const curExam = activeExam || (typeof window !== 'undefined' ? window.activeExam : null);
+  if (!curExam || !curExam.questions || !curExam.questions[index]) return;
+
   examSession.currentQuestionIndex = index;
 
   // นำทางปุ่มวิทยานิพนธ์ข้างล่างซิงค์
-  document.getElementById('exam-current-index-num').innerText = index + 1;
-  document.getElementById('exam-total-index-num').innerText = activeExam.questions.length;
+  const curNum = document.getElementById('exam-current-index-num');
+  if (curNum) curNum.innerText = index + 1;
+  const totalNum = document.getElementById('exam-total-index-num');
+  if (totalNum) totalNum.innerText = curExam.questions.length;
 
-  const q = activeExam.questions[index];
+  const q = curExam.questions[index];
   const box = document.getElementById('current-question-box');
+  if (!box) return;
 
   const savedAns = examSession.answers[q.id] || '';
   const isChoice = q.type === 'choice';
@@ -3048,6 +3351,20 @@ async function renderExamQuestion(index) {
   let qBodyHtml = `
     <div class="question-title">ข้อที่ ${index + 1}: ${escapeHtml(q.text)}</div>
   `;
+
+  if (q.image) {
+    qBodyHtml += `
+      <div class="exam-question-image-box">
+        <div class="exam-question-img-wrap" onclick="openExamImageZoom('${escapeHtml(q.image)}', 'คำถามข้อที่ ${index + 1}')" title="คลิกเพื่อดูรูปภาพขนาดใหญ่">
+          <img src="${escapeHtml(q.image)}" alt="รูปภาพคำถามข้อที่ ${index + 1}" class="exam-question-img">
+        </div>
+        <div class="exam-question-img-hint">
+          <i class="lucide-icon" data-lucide="zoom-in"></i>
+          <span>แตะหรือคลิกที่รูปภาพเพื่อดูภาพขยายขนาดใหญ่</span>
+        </div>
+      </div>
+    `;
+  }
 
   if (isChoice) {
     qBodyHtml += `<div class="exam-choices-list">`;
@@ -3076,10 +3393,12 @@ async function renderExamQuestion(index) {
   document.getElementById('exam-prev-btn').disabled = index === 0;
 
   const nextBtn = document.getElementById('exam-next-btn');
-  if (index === activeExam.questions.length - 1) {
-    nextBtn.innerHTML = `<span>ส่งกระดาษคำตอบ</span> <i class="lucide-icon" data-lucide="send"></i>`;
-  } else {
-    nextBtn.innerHTML = `<span>ข้อถัดไป</span> <i class="lucide-icon" data-lucide="chevron-right"></i>`;
+  if (nextBtn) {
+    if (index === curExam.questions.length - 1) {
+      nextBtn.innerHTML = `<span>ส่งกระดาษคำตอบ</span> <i class="lucide-icon" data-lucide="send"></i>`;
+    } else {
+      nextBtn.innerHTML = `<span>ข้อถัดไป</span> <i class="lucide-icon" data-lucide="chevron-right"></i>`;
+    }
   }
 
   refreshIcons(document.getElementById('current-question-box'));
@@ -3368,6 +3687,7 @@ function parseGoogleFormHtml(html) {
           id: qId,
           type: 'choice',
           text: questionText,
+          image: '',
           points: 2, // กำหนดคะแนนเริ่มต้น
           options: options,
           correctAnswer: 0 // ดัชนีเฉลยเริ่มต้น (ตัวเลือกแรก) ครูแก้ไขทีหลังได้
@@ -3379,6 +3699,7 @@ function parseGoogleFormHtml(html) {
         id: qId,
         type: 'subjective',
         text: questionText,
+        image: '',
         points: 4, // กำหนดคะแนนเริ่มต้น
         correctAnswer: '' // ครูตั้งค่าคำเฉลยเพิ่มทีหลัง
       });

@@ -1611,3 +1611,118 @@ body.in-exam header {
   animation: spin 1.2s linear infinite;
   display: inline-block;
 }
+
+/* Question Image Styles (Builder & Exam Engine) */
+.question-image-uploader-section {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  transition: all var(--transition-fast);
+}
+.question-image-uploader-section:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+.question-image-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.question-image-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+}
+.question-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.question-image-preview-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.question-image-preview-thumb {
+  max-width: 160px;
+  max-height: 110px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--border-glass);
+  background-color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.question-image-preview-thumb:hover {
+  transform: scale(1.03);
+}
+
+/* Exam Engine Question Image */
+.exam-question-image-box {
+  margin: 16px 0 24px;
+  text-align: center;
+}
+.exam-question-img-wrap {
+  display: inline-block;
+  position: relative;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+  background-color: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+.exam-question-img-wrap:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+.exam-question-img {
+  display: block;
+  max-width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+.exam-question-img-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.exam-question-img-hint i {
+  width: 13px;
+  height: 13px;
+}
+
+/* Modal Lightbox for Image Zoom */
+.image-zoom-overlay-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+}
+.image-zoom-img {
+  max-width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
