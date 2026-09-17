@@ -1355,24 +1355,25 @@ body.in-exam header {
   }
 }
 
-/* Responsive adjustment */
+/* Responsive adjustment - Mobile First Experience */
 @media (max-width: 768px) {
   /* Header adjustments */
   header {
-    padding: 0 16px;
-    height: 60px;
+    padding: 0 14px;
+    height: 56px;
   }
   .logo-container span {
-    display: none; /* ซ่อนข้อความยาวๆ เพื่อประหยัดพื้นที่ */
+    font-size: 16px !important;
   }
   #user-badge-role {
-    display: none; /* ซ่อน badge ตำแหน่ง */
+    display: none; /* ซ่อน badge ตำแหน่งบนมือถือ */
   }
   .user-badge {
-    padding: 6px 10px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
   .user-badge span:first-child {
-    max-width: 90px;
+    max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1381,64 +1382,214 @@ body.in-exam header {
   }
   .data-table th, .data-table td {
     white-space: nowrap;
-    padding: 10px 12px !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px;
   }
 
   /* Auth Screens */
   .auth-card {
-    padding: 24px 20px;
+    padding: 24px 18px;
+    border-radius: var(--radius-lg);
   }
   .role-selector {
     grid-template-columns: 1fr;
     gap: 8px;
   }
   #reg-role-group .role-selector {
-    grid-template-columns: repeat(2, 1fr); /* บังคับเป็น 2 คอลัมน์สำหรับแท็บสมัคร */
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Dashboard */
+  /* ============================================== */
+  /* 1. Dashboard & Mobile Bottom Navigation Bar    */
+  /* ============================================== */
   .dashboard-container {
     flex-direction: column;
   }
+  /* แปลงแถบเมนูข้างให้เป็นแถบเมนูด้านล่างสุด (Bottom Navigation Bar) */
   .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border-glass);
-    padding: 12px 16px;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 12px;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 60px !important;
+    background: var(--bg-secondary) !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border-glass) !important;
+    padding: 4px 6px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    z-index: 1000 !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  #sidebar-menu-items {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    gap: 2px !important;
   }
   .sidebar-link {
-    white-space: nowrap;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 2px !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 10px !important;
+    gap: 3px !important;
+    color: var(--text-secondary) !important;
+    flex: 1 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    border-left: none !important;
+    border-bottom: none !important;
+    background: transparent !important;
+    transition: all var(--transition-fast) !important;
+  }
+  .sidebar-link i,
+  .sidebar-link svg {
+    width: 20px !important;
+    height: 20px !important;
   }
   .sidebar-link.active {
-    border-left: none;
-    border-bottom: 3px solid var(--primary);
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    padding-left: 12px;
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+    background: rgba(99, 102, 241, 0.1) !important;
+    border: none !important;
+  }
+  .sidebar-link.active i,
+  .sidebar-link.active svg {
+    color: var(--primary) !important;
   }
   .sidebar-footer {
-    display: none;
+    display: none !important;
   }
+  /* เว้นระยะห่างด้านล่างสำหรับเนื้อหาเพื่อไม่ให้ถูก Bottom Navigation บัง */
   .main-content {
-    padding: 16px;
+    padding: 14px 14px 80px 14px !important;
   }
 
   /* Dashboard widgets */
   .dashboard-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
+  }
+  .view-title-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
   }
   .view-title-container h2 {
-    font-size: 20px;
+    font-size: 18px;
+  }
+  .view-title-container .btn {
+    width: 100%;
+    justify-content: center;
   }
 
-  /* Exam Engine layout */
+  /* ============================================== */
+  /* 2. Modals & Bottom Sheet Mobile Redesign       */
+  /* ============================================== */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 90vh !important;
+    max-height: 90dvh !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    animation: slideUpModal 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6) !important;
+  }
+  .modal-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: var(--bg-secondary) !important;
+    padding: 14px 18px !important;
+    margin-bottom: 0 !important;
+    border-bottom: 1px solid var(--border-glass) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  .modal-header h3 {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+  }
+  .close-modal-btn {
+    width: 32px !important;
+    height: 32px !important;
+    background: var(--bg-tertiary) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #modal-body-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 16px 16px 24px 16px !important;
+  }
+  /* ปลดล็อคกล่องเลื่อนซ้อนด้านใน ให้เลื่อนในโมดอลอย่างลื่นไหลพื้นที่เดียว */
+  #modal-body-content div[style*="max-height: 400px"],
+  #modal-body-content div[style*="max-height: 380px"],
+  #modal-body-content div[style*="max-height: 300px"] {
+    max-height: none !important;
+    overflow-y: visible !important;
+    padding-right: 0 !important;
+  }
+  /* ปุ่ม Action ด้านล่างของโมดอลให้ตรึงติดล่างและแตะง่าย */
+  .modal-actions-sticky {
+    position: sticky !important;
+    bottom: -24px !important;
+    background: var(--bg-secondary) !important;
+    padding: 12px 16px 16px 16px !important;
+    margin: 16px -16px -24px -16px !important;
+    border-top: 1px solid var(--border-glass) !important;
+    z-index: 10 !important;
+    display: flex !important;
+    gap: 10px !important;
+    justify-content: flex-end !important;
+  }
+  .modal-actions-sticky .btn {
+    flex: 1 !important;
+    padding: 12px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    justify-content: center !important;
+  }
+
+  /* ============================================== */
+  /* 3. Mobile Exam Engine Layout                   */
+  /* ============================================== */
   .exam-engine-layout {
-    flex-direction: column;
+    flex-direction: column !important;
     height: 100vh !important;
     height: 100dvh !important;
     overflow: hidden !important;
@@ -1448,158 +1599,163 @@ body.in-exam header {
     height: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
   }
   .exam-sidebar {
-    width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-glass);
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    background-color: var(--bg-tertiary);
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-glass) !important;
+    padding: 8px 12px !important;
+    background: var(--bg-secondary) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 30 !important;
   }
   .exam-info-header {
-    display: none; /* ซ่อน title ข้อสอบเพราะพื้นที่น้อย */
+    display: none !important;
   }
   .exam-timer-widget {
-    margin: 0;
-    padding: 8px 16px;
-    font-size: 16px;
-    flex: 1;
-    justify-content: center;
+    margin: 0 !important;
+    padding: 6px 14px !important;
+    font-size: 15px !important;
+    border-radius: var(--radius-full) !important;
+    width: auto !important;
+    align-self: flex-end !important;
   }
   .questions-nav-panel {
-    display: block;
-    width: 100%;
-    margin-top: 10px;
-    padding: 8px 12px;
-    border-top: 1px solid var(--border-glass);
-    overflow: hidden;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-top: none !important;
   }
   .questions-nav-panel h3 {
-    font-size: 11px;
-    margin-bottom: 8px;
-    color: var(--text-muted);
+    display: none !important;
   }
   .questions-nav-grid {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 8px;
-    padding-bottom: 4px;
-    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    gap: 6px !important;
+    padding: 2px 0 4px 0 !important;
+    scrollbar-width: none !important;
   }
   .questions-nav-grid::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for Chrome/Safari */
+    display: none !important;
   }
   .question-nav-btn {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    font-size: 13px;
+    flex-shrink: 0 !important;
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 12.5px !important;
+    border-radius: 50% !important;
   }
   .exam-sidebar-footer {
-    padding: 0;
-    border-top: none;
-    margin-left: 12px;
+    display: none !important;
   }
-  #exam-submit-trigger {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-  
-  /* Exam content */
+
+  /* Exam question content */
   .exam-status-bar {
-    padding: 12px 16px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .exam-status-bar > div {
-    justify-content: space-between;
-    font-size: 12px;
+    padding: 10px 14px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: var(--bg-tertiary) !important;
+    font-size: 12px !important;
   }
   .exam-question-body {
     flex: 1 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 20px 16px;
+    padding: 14px 14px 85px 14px !important;
   }
   .question-title {
-    font-size: 16px;
-    margin-bottom: 20px;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 14px !important;
   }
   .exam-choice-option {
-    padding: 12px 16px;
+    padding: 13px 14px !important;
+    margin-bottom: 10px !important;
+    border-radius: var(--radius-md) !important;
+    min-height: 48px !important;
+    border: 2px solid var(--border-glass) !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: all 0.15s ease !important;
   }
-  .exam-actions-panel {
-    padding: 12px 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
+  .exam-choice-option.selected {
+    border-color: var(--primary) !important;
+    background: rgba(99, 102, 241, 0.12) !important;
   }
-  .exam-actions-panel .btn {
-    flex: 1;
-    min-width: 120px;
-    padding: 10px;
-  }
-  .exam-actions-panel > div {
-    order: -1;
-    width: 100%;
-    text-align: center;
-    margin-bottom: 4px;
-  }
-
-  /* Modals and Overlays */
-  .overlay-card {
-    padding: 24px 20px;
-  }
-  .overlay-icon {
-    font-size: 36px;
-  }
-  .modal-content {
-    padding: 24px 20px;
-  }
-
-  /* อัปเดตการแสดงผลการ์ดเป็นแบบเดี่ยวแนวตั้งบนมือถือ */
-  .cards-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-  }
-
-  /* ปรับแต่งขนาดฟอนต์ของช่องกรอกข้อมูลให้กว้างอย่างน้อย 16px เพื่อป้องกัน iOS/Safari ซูมหน้าจออัตโนมัติ */
-  .form-control, 
-  .form-group input, 
-  .form-group select, 
-  .form-group textarea {
-    font-size: 16px !important;
-  }
-
-  /* เพิ่มพื้นที่ปุ่มสัมผัส (Touch Targets) สำหรับเมนูข้างบนมือถือ */
-  .sidebar-link {
-    padding: 10px 14px !important;
+  .exam-choice-label {
     font-size: 13.5px !important;
   }
 
-  /* ปรับปรุงขนาดข้อสอบและตัวเลือกปรนัยในมือถือให้คลิกง่ายขึ้น */
-  .exam-choice-option {
-    padding: 14px 18px !important;
-    margin-bottom: 10px;
+  /* Fixed Bottom Action Panel for Exam */
+  .exam-actions-panel {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding: 10px 14px !important;
+    background: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-glass) !important;
+    display: flex !important;
+    gap: 10px !important;
+    z-index: 50 !important;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    justify-content: space-between !important;
   }
-  .exam-choice-label {
-    font-size: 14.5px !important;
+  .exam-actions-panel .btn {
+    flex: 1 !important;
+    padding: 11px !important;
+    font-size: 13px !important;
+    border-radius: var(--radius-md) !important;
+    min-width: 0 !important;
+  }
+  .exam-actions-panel > div {
+    display: none !important;
   }
 
-  /* ปุ่มนำทางในข้อสอบให้กดได้ง่ายขึ้นด้วยนิ้วมือ */
-  .question-nav-btn {
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 14px !important;
+  /* ============================================== */
+  /* 4. Cards & General Mobile Utilities            */
+  /* ============================================== */
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .item-card {
+    padding: 16px !important;
+  }
+  .item-card-footer .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ป้องกัน iOS ซูมหน้าจออัตโนมัติ */
+  .form-control,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px !important;
+  }
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 

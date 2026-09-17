@@ -841,7 +841,7 @@ function openEnrollmentModal() {
             </button>
           </div>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
+        <div class="modal-actions-sticky" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid var(--border-glass); padding-top: 16px;">
           <button type="button" class="btn btn-secondary" id="enroll-cancel-btn">ยกเลิก</button>
           <button type="submit" class="btn btn-primary">ยืนยันลงทะเบียน</button>
         </div>
@@ -1294,7 +1294,7 @@ window.viewAttemptDetails = async function (attemptId) {
 
   html += `
       </div>
-      <div style="display:flex; justify-content:flex-end; margin-top:24px;">
+      <div class="modal-actions-sticky" style="display:flex; justify-content:flex-end; margin-top:24px;">
         <button class="btn btn-primary" onclick="closeModal()">ปิดหน้าต่าง</button>
       </div>
     </div>
@@ -1387,7 +1387,7 @@ function openAddSubjectModal() {
         <label for="sub-name-input" class="form-label">ชื่อเต็มรายวิชา</label>
         <input type="text" id="sub-name-input" class="form-control" placeholder="กรอกชื่อรายวิชา" required>
       </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+      <div class="modal-actions-sticky" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
         <button type="button" class="btn btn-secondary" id="sub-cancel-btn">ยกเลิก</button>
         <button type="submit" class="btn btn-primary">สร้างวิชาเรียน</button>
       </div>
@@ -1715,7 +1715,7 @@ window.previewExamByTeacher = async function (examId) {
 
   html += `
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 16px;">
+      <div class="modal-actions-sticky" style="display:flex; justify-content:space-between; align-items:center; margin-top: 16px;">
         <button type="button" class="btn btn-primary" onclick="closeModal(); openEditExamView('${exam.id}');" style="font-size:12px; padding:6px 14px; display:inline-flex; align-items:center; gap:6px;">
           <i class="lucide-icon" data-lucide="edit-3" style="width:13px; height:13px;"></i>
           <span>แก้ไขชุดข้อสอบนี้</span>
@@ -2397,7 +2397,7 @@ window.openTeacherGradeOverlay = async function (attemptId) {
         <input type="text" id="grade-teacher-comment" class="form-control" placeholder="พิมพ์ข้อความที่ต้องการแจ้งให้นักเรียนทราบเมื่ออ่านผลคะแนน..." value="${escapeHtml(att.comments)}">
       </div>
 
-      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+      <div class="modal-actions-sticky" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
         <button class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
         <button class="btn btn-primary" id="save-grading-btn">บันทึกตรวจคะแนนสอบ</button>
       </div>
@@ -2855,7 +2855,7 @@ function openAdminCreateUserModal() {
         <label for="adm-c-password" class="form-label">รหัสผ่านเริ่มต้น (Password)</label>
         <input type="text" id="adm-c-password" class="form-control" value="password" required>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:24px;">
+      <div class="modal-actions-sticky" style="display:flex; justify-content:flex-end; gap:10px; margin-top:24px;">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
         <button type="submit" class="btn btn-primary">สร้างบัญชีผู้ใช้</button>
       </div>
