@@ -3215,8 +3215,8 @@ window.initiateExam = async function (examId) {
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 15000,
+        maximumAge: 30000
       }
     );
   } else {
@@ -3336,7 +3336,7 @@ function enterFullscreenMode() {
   try {
     const docEl = document.documentElement;
     if (docEl.requestFullscreen) {
-      docEl.requestFullscreen();
+      docEl.requestFullscreen().catch(() => {});
     } else if (docEl.webkitRequestFullscreen) {
       docEl.webkitRequestFullscreen();
     } else if (docEl.msRequestFullscreen) {
@@ -3660,6 +3660,16 @@ function handleAntiCheatVisibility() {
 
 function handleAntiCheatInfraction() {
   if (!activeExam) return;
+
+  // ป้องกันบั๊กบนมือถือ: เมื่อผู้สอบกำลังพิมพ์คำตอบอัตนัย (input/textarea) คีย์บอร์ดเสมือนหรือโฟกัสอาจทำให้ window blur ชั่วคราว
+  // หรือเปิดดูรูปภาพคำถามขนาดใหญ่ (Modal Lightbox) ในระบบ โดยที่หน้าจอยังคงเปิดอยู่ ไม่ถือว่าสลับแอป/ทุจริต
+  const activeEl = document.activeElement;
+  const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+  const isViewingModal = document.getElementById('global-modal-overlay')?.style.display === 'flex';
+  if (!document.hidden && (isTyping || isViewingModal)) {
+    return;
+  }
+
   // ป้องกันการแจ้งเตือนซ้ำซ้อนในขณะที่หน้าต่างเตือนแสดงอยู่แล้ว
   const warningOverlay = document.getElementById('anti-cheat-warning-overlay');
   if (warningOverlay && warningOverlay.style.display === 'flex') return;

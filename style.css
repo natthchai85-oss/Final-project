@@ -1362,6 +1362,12 @@ body.in-exam header {
     padding: 0 14px;
     height: 56px;
   }
+  #logout-btn span {
+    display: none !important;
+  }
+  #logout-btn {
+    padding: 8px 10px !important;
+  }
   .logo-container span {
     font-size: 16px !important;
   }
@@ -1413,21 +1419,27 @@ body.in-exam header {
     right: 0 !important;
     top: auto !important;
     width: 100% !important;
-    height: 60px !important;
+    height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
     background: var(--bg-secondary) !important;
     border-right: none !important;
     border-top: 1px solid var(--border-glass) !important;
-    padding: 4px 6px !important;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px)) 6px !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-around !important;
+    justify-content: flex-start !important;
     z-index: 1000 !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35) !important;
     margin: 0 !important;
-    overflow: hidden !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .sidebar::-webkit-scrollbar {
+    display: none !important;
   }
   #sidebar-menu-items {
     display: flex !important;
@@ -1436,6 +1448,7 @@ body.in-exam header {
     justify-content: space-around !important;
     align-items: center !important;
     gap: 2px !important;
+    flex-wrap: nowrap !important;
   }
   .sidebar-link {
     display: flex !important;
@@ -1447,13 +1460,23 @@ body.in-exam header {
     font-size: 10px !important;
     gap: 3px !important;
     color: var(--text-secondary) !important;
-    flex: 1 !important;
+    flex: 1 0 56px !important;
+    min-width: 52px !important;
+    max-width: 82px !important;
     text-align: center !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
     border-left: none !important;
     border-bottom: none !important;
     background: transparent !important;
     transition: all var(--transition-fast) !important;
+  }
+  .sidebar-link span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    font-size: 9.5px !important;
   }
   .sidebar-link i,
   .sidebar-link svg {
@@ -1475,7 +1498,7 @@ body.in-exam header {
   }
   /* เว้นระยะห่างด้านล่างสำหรับเนื้อหาเพื่อไม่ให้ถูก Bottom Navigation บัง */
   .main-content {
-    padding: 14px 14px 80px 14px !important;
+    padding: 14px 14px calc(80px + env(safe-area-inset-bottom, 0px)) 14px !important;
   }
 
   /* Dashboard widgets */
@@ -1506,6 +1529,7 @@ body.in-exam header {
     background: rgba(0, 0, 0, 0.75) !important;
     backdrop-filter: blur(4px) !important;
     -webkit-backdrop-filter: blur(4px) !important;
+    z-index: 2000 !important;
   }
   .modal-content {
     width: 100% !important;
@@ -1568,7 +1592,7 @@ body.in-exam header {
     position: sticky !important;
     bottom: -24px !important;
     background: var(--bg-secondary) !important;
-    padding: 12px 16px 16px 16px !important;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px !important;
     margin: 16px -16px -24px -16px !important;
     border-top: 1px solid var(--border-glass) !important;
     z-index: 10 !important;
@@ -1583,6 +1607,12 @@ body.in-exam header {
     font-weight: 600 !important;
     border-radius: var(--radius-md) !important;
     justify-content: center !important;
+  }
+  /* กล่องเนื้อหาของ Theme Picker Modal บนมือถือ */
+  #theme-modal-overlay .modal-content > div:not(.modal-header) {
+    padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px)) 18px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   /* ============================================== */
@@ -1671,7 +1701,7 @@ body.in-exam header {
     flex: 1 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 14px 14px 85px 14px !important;
+    padding: 14px 14px calc(85px + env(safe-area-inset-bottom, 0px)) 14px !important;
   }
   .question-title {
     font-size: 15px !important;
@@ -1702,7 +1732,7 @@ body.in-exam header {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    padding: 10px 14px !important;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)) 14px !important;
     background: var(--bg-secondary) !important;
     border-top: 1px solid var(--border-glass) !important;
     display: flex !important;
@@ -1722,6 +1752,18 @@ body.in-exam header {
   }
   .exam-actions-panel > div {
     display: none !important;
+  }
+
+  /* Anti-cheat Overlays on Mobile */
+  .anti-cheat-overlay {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 16px !important;
+  }
+  .overlay-card {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    padding: 24px 16px !important;
   }
 
   /* ============================================== */
@@ -1745,6 +1787,74 @@ body.in-exam header {
   .form-group select,
   .form-group textarea {
     font-size: 16px !important;
+  }
+
+  /* Mobile Touch Improvements */
+  button,
+  .btn,
+  .role-option,
+  .sidebar-link,
+  .exam-choice-option,
+  .question-nav-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ============================================== */
+  /* 5. Teacher Exam Builder Mobile Responsive      */
+  /* ============================================== */
+  .exam-builder-card {
+    padding: 16px 12px !important;
+  }
+  .exam-builder-card form div[style*="display:grid"],
+  .exam-builder-card form div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .exam-builder-card div[style*="display:flex"][style*="justify-content:space-between"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .exam-builder-card div[style*="display:flex"][style*="gap:10px"] {
+    flex-wrap: wrap !important;
+  }
+  .exam-builder-card div[style*="display:flex"][style*="gap:10px"] .btn {
+    flex: 1 1 120px !important;
+    font-size: 11.5px !important;
+    padding: 8px 10px !important;
+    justify-content: center !important;
+  }
+  .question-item {
+    padding: 14px 12px !important;
+  }
+  .question-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    position: relative !important;
+  }
+  .remove-question-btn {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+  }
+  .question-image-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .question-image-actions > div {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .question-image-preview-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .question-image-preview-card div[style*="display:flex"] {
+    justify-content: center !important;
   }
 }
 
