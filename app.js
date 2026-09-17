@@ -1294,8 +1294,7 @@ window.viewAttemptDetails = async function (attemptId) {
 
   html += `
       </div>
-      <div style="display:flex; justify-content:space-between; margin-top:24px;">
-        <button class="btn btn-secondary" onclick="window.print()"><i class="lucide-icon" data-lucide="printer"></i> พิมพ์เอกสารรายงานผล</button>
+      <div style="display:flex; justify-content:flex-end; margin-top:24px;">
         <button class="btn btn-primary" onclick="closeModal()">ปิดหน้าต่าง</button>
       </div>
     </div>
