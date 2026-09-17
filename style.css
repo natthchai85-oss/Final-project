@@ -1645,6 +1645,8 @@ body:not(.in-exam) #exam-taking-container {
   }
   .exam-sidebar {
     width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     flex-shrink: 0 !important;
     border-right: none !important;
     border-bottom: 1px solid var(--border-glass) !important;
@@ -1702,7 +1704,7 @@ body:not(.in-exam) #exam-taking-container {
 
   /* Exam main panel and question content */
   .exam-main-panel {
-    flex: 1 1 0% !important;
+    flex: 1 1 auto !important;
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
