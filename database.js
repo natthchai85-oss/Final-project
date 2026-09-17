@@ -80,7 +80,7 @@ class SupabaseDatabase {
   }
 
   async addUser(user) {
-    const id = 'usr_' + Date.now();
+    const id = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const newUser = { id, active: true, ...user };
     const { data, error } = await supabaseClient.from('users').insert([toSnakeRow(newUser)]).select().single();
     if (error) throw error;
@@ -223,7 +223,7 @@ class SupabaseDatabase {
   }
 
   async addExam(examData) {
-    const id = 'exm_' + Date.now();
+    const id = 'exm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const newExam = toSnakeRow({ id, active: true, questions: [], ...examData });
     const { data, error } = await supabaseClient.from('exams').insert([newExam]).select().single();
     if (error) { console.error('addExam error:', error); throw error; }
@@ -268,7 +268,7 @@ class SupabaseDatabase {
   }
 
   async addAttempt(attemptData) {
-    const id = 'att_' + Date.now();
+    const id = 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const examId = attemptData.examId || attemptData.exam_id;
     let graded = true;
 
@@ -300,14 +300,19 @@ class SupabaseDatabase {
     return normalizeRow(data);
   }
 
-  async updateAttemptGrading(attemptId, scoreUpdates, teacherComment) {
+  async updateAttemptGrading(attemptId, scoreUpdates, teacherComment, updatedAnswers = null) {
+    const updatePayload = {
+      score: scoreUpdates.finalScore,
+      comments: teacherComment,
+      graded: true
+    };
+    if (updatedAnswers) {
+      updatePayload.answers = updatedAnswers;
+    }
+
     const { data, error } = await supabaseClient
       .from('attempts')
-      .update({
-        score: scoreUpdates.finalScore,
-        comments: teacherComment,
-        graded: true
-      })
+      .update(updatePayload)
       .eq('id', attemptId)
       .select()
       .single();
@@ -327,7 +332,7 @@ class SupabaseDatabase {
 
   async addLog(userId, userName, role, action, details) {
     const newLog = {
-      id: 'log_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
       user_id: userId,
       user_name: userName,
       role: role,

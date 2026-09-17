@@ -59,6 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // เปิดใช้งานระบบป้องกันความปลอดภัยของซอร์สโค้ด
   initializeSecuritySettings();
 
+  // ป้องกันการปิดแท็บหรือรีเฟรชหน้าระหว่างทำข้อสอบ
+  window.addEventListener('beforeunload', (e) => {
+    if (activeExam) {
+      autoSaveExamProgress();
+      e.preventDefault();
+      e.returnValue = 'คุณกำลังทำข้อสอบออนไลน์อยู่ หากออกจากหน้านี้ ข้อสอบอาจไม่ได้รับการส่งคำตอบ';
+      return e.returnValue;
+    }
+  });
+
   refreshIcons(document.getElementById('auth-container'));
 });
 
@@ -797,7 +807,7 @@ async function renderStudentSubjects(container) {
             <span class="badge-role role-student" style="font-size: 10px;">รหัสวิชา: ${sub.id}</span>
           </div>
           <h3 class="item-card-title">${sub.name}</h3>
-          <p class="item-card-desc">${sub.description}</p>
+          ${sub.description ? `<p class="item-card-desc">${escapeHtml(sub.description)}</p>` : ''}
           <div class="item-card-meta">
             <span>ผู้สอน: ${teacher ? teacher.name : 'ไม่ระบุผู้สอน'}</span>
             <span>ข้อสอบในระบบ: ${examsCount} รายการ</span>
@@ -1048,7 +1058,7 @@ async function renderStudentExams(container) {
             ${badgeHtml}
           </div>
           <h3 class="item-card-title">${ex.title}</h3>
-          <p class="item-card-desc">${ex.description}</p>
+          ${ex.description ? `<p class="item-card-desc">${escapeHtml(ex.description)}</p>` : ''}
           <div class="item-card-meta">
             <span>จำกัดเวลา: <strong>${ex.timeLimit} นาที</strong></span>
             <span>จำนวนคำถาม: ${ex.questions.length} ข้อ</span>
@@ -1335,7 +1345,7 @@ async function renderTeacherSubjects(container) {
             <span class="badge-role role-teacher" style="font-size: 10px;">รหัสห้องเรียน: ${sub.id}</span>
           </div>
           <h3 class="item-card-title">${sub.name}</h3>
-          <p class="item-card-desc">${sub.description}</p>
+          ${sub.description ? `<p class="item-card-desc">${escapeHtml(sub.description)}</p>` : ''}
           <div class="item-card-meta">
             <span>นักเรียน: <strong>${studentsCount} คน</strong></span>
             <span>มีข้อสอบ: ${examsCount} ชุด</span>
@@ -1591,7 +1601,7 @@ async function renderTeacherExams(container) {
             <span class="status-badge ${ex.active ? 'status-pass' : 'status-fail'}">${ex.active ? 'เปิดสอบ' : 'ปิดระบบสอบ'}</span>
           </div>
           <h3 class="item-card-title">${ex.title}</h3>
-          <p class="item-card-desc">${ex.description}</p>
+          ${ex.description ? `<p class="item-card-desc">${escapeHtml(ex.description)}</p>` : ''}
           <div class="item-card-meta">
             <span>เวลาสอบ: <strong>${ex.timeLimit} นาที</strong></span>
             <span>คำถาม: ${ex.questions.length} ข้อ</span>
@@ -2334,10 +2344,11 @@ window.openTeacherGradeOverlay = async function (attemptId) {
       const isCorrect = parseInt(studentAns) === q.correctAnswer;
       html += `<span style="color: ${isCorrect ? 'var(--success)' : 'var(--danger)'};">${isCorrect ? 'ตอบถูกต้อง (+ ' + q.points + ')' : 'ตอบผิด (+ 0)'}</span>`;
     } else {
+      const currentSubjScore = (att.answers && att.answers[q.id + '_score'] !== undefined) ? att.answers[q.id + '_score'] : 0;
       html += `
         <div style="display:flex; align-items:center; gap:8px;">
           <span>ให้คะแนนข้อเขียน:</span>
-          <input type="number" class="form-control subjective-input-points" data-qid="${q.id}" data-max="${q.points}" value="${att.graded ? (att.answers[q.id + '_score'] || 0) : 0}" min="0" max="${q.points}" step="0.5" style="width: 70px; padding: 4px 8px; text-align:center;">
+          <input type="number" class="form-control subjective-input-points" data-qid="${q.id}" data-max="${q.points}" value="${currentSubjScore}" min="0" max="${q.points}" step="0.5" style="width: 70px; padding: 4px 8px; text-align:center;">
           <span>/ ${q.points}</span>
         </div>
       `;
@@ -2420,7 +2431,7 @@ window.openTeacherGradeOverlay = async function (attemptId) {
 
     const comment = document.getElementById('grade-teacher-comment').value.trim();
 
-    await window.db.updateAttemptGrading(attemptId, { finalScore }, comment);
+    await window.db.updateAttemptGrading(attemptId, { finalScore }, comment, att.answers);
     await window.db.addLog(currentUser.id, currentUser.name, currentUser.role, 'ตรวจคะแนน', `ครูส่งคะแนนตรวจ "${att.examTitle}" ของ ${att.studentName} คะแนนรวม ${finalScore} คะแนน`);
 
     alert(`ประเมินและให้คะแนน "${att.studentName}" สำเร็จ!`);
@@ -2698,12 +2709,16 @@ async function downloadGradebookCSV(subjectId) {
   }
 
   const subject = await window.db.getSubject(subjectId);
+  const users = await window.db.getUsers();
+  const userMap = new Map(users.map(u => [u.id, u]));
 
   let csvContent = "\ufeff"; // BOM สำหรับอ่านอักษรไทย Excel ได้
   csvContent += "รหัสนักเรียน,ชื่อนักเรียน,ชุดข้อสอบ,วันที่ส่งกระดาษ,เวลาที่ใช้สอบ (วินาที),ออกนอกหน้าจอ (ครั้ง),สถานะการโกง,คะแนนรวม,คะแนนเต็ม\n";
 
   attempts.forEach(a => {
-    csvContent += `"${a.studentId}","${a.studentName}","${a.examTitle}","${new Date(a.submittedAt).toISOString()}","${a.timeSpent}","${a.exitCount}","${a.status}","${a.score}","${a.totalPoints}"\n`;
+    const studentUser = userMap.get(a.studentId);
+    const actualStudentId = studentUser ? (studentUser.studentId || a.studentId) : a.studentId;
+    csvContent += `"${actualStudentId}","${a.studentName}","${a.examTitle}","${new Date(a.submittedAt).toISOString()}","${a.timeSpent}","${a.exitCount}","${a.status}","${a.score}","${a.totalPoints}"\n`;
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3211,20 +3226,80 @@ window.initiateExam = async function (examId) {
   }
 };
 
+function getExamStorageKey(examId, studentId) {
+  return `exam_autosave_${examId}_${studentId}`;
+}
+
+function autoSaveExamProgress() {
+  if (!activeExam || !currentUser) return;
+  try {
+    const key = getExamStorageKey(activeExam.id, currentUser.id);
+    const data = {
+      examId: activeExam.id,
+      studentId: currentUser.id,
+      answers: examSession.answers,
+      cheatCount: examSession.cheatCount,
+      secondsLeft: examSession.secondsLeft,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (err) {
+    console.warn("ไม่สามารถบันทึกคำตอบอัตโนมัติลง LocalStorage ได้:", err);
+  }
+}
+
+function clearExamProgress(examId, studentId) {
+  try {
+    const key = getExamStorageKey(examId, studentId);
+    localStorage.removeItem(key);
+  } catch (err) {
+    console.warn("ไม่สามารถล้างข้อมูล LocalStorage ได้:", err);
+  }
+}
+
+function restoreExamProgress(examId, studentId) {
+  try {
+    const key = getExamStorageKey(examId, studentId);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.warn("ไม่สามารถอ่านข้อมูล LocalStorage ได้:", err);
+    return null;
+  }
+}
+
 function proceedToStartExam(exam) {
-  if (confirm(`คุณต้องการเริ่มทำข้อสอบออนไลน์ในชุด "${exam.title}" หรือไม่?\n\n** ข้อบังคับและระเบียบความปลอดภัย **\n1. ระบบจะบังคับล็อคหน้าจอของท่านให้อยู่ในโหมดเต็มหน้าจอ (Fullscreen)\n2. ห้ามสลับแท็บ ย่อบราวเซอร์ หรือเปิดแอปฯ อื่นโดยเด็ดขาด\n3. อนุญาตให้ออกนอกหน้าจอได้ไม่เกิน 2 ครั้ง ครั้งที่ 3 ระบบจะทำการระงับและส่งกระดาษคำตอบทันที!`)) {
+  const savedProgress = restoreExamProgress(exam.id, currentUser.id);
+  const hasSavedAnswers = savedProgress && savedProgress.answers && Object.keys(savedProgress.answers).length > 0;
+
+  let confirmMsg = `คุณต้องการเริ่มทำข้อสอบออนไลน์ในชุด "${exam.title}" หรือไม่?\n\n** ข้อบังคับและระเบียบความปลอดภัย **\n1. ระบบจะบังคับล็อคหน้าจอของท่านให้อยู่ในโหมดเต็มหน้าจอ (Fullscreen)\n2. ห้ามสลับแท็บ ย่อบราวเซอร์ หรือเปิดแอปฯ อื่นโดยเด็ดขาด\n3. อนุญาตให้ออกนอกหน้าจอได้ไม่เกิน 2 ครั้ง ครั้งที่ 3 ระบบจะทำการระงับและส่งกระดาษคำตอบทันที!`;
+  if (hasSavedAnswers) {
+    confirmMsg += `\n\n📌 ตรวจพบคำตอบเดิมที่บันทึกไว้ในเครื่อง (${Object.keys(savedProgress.answers).length} ข้อ) ระบบจะกู้คืนคำตอบให้คุณโดยอัตโนมัติ`;
+  }
+
+  if (confirm(confirmMsg)) {
     // เซ็ตสถานะการสอบ
     activeExam = exam;
 
+    const initialAnswers = hasSavedAnswers ? savedProgress.answers : {};
+    const initialSeconds = (savedProgress && typeof savedProgress.secondsLeft === 'number' && savedProgress.secondsLeft > 10)
+      ? savedProgress.secondsLeft
+      : (exam.timeLimit * 60);
+    const initialCheatCount = (savedProgress && savedProgress.cheatCount) ? savedProgress.cheatCount : 0;
+
     // รีเซ็ตตัวแปรเซสชันทำข้อสอบ
     examSession = {
-      answers: {},
-      secondsLeft: exam.timeLimit * 60,
-      cheatCount: 0,
+      answers: initialAnswers,
+      secondsLeft: initialSeconds,
+      cheatCount: initialCheatCount,
       cheatingLogs: [],
       currentQuestionIndex: 0,
       timerInterval: null
     };
+
+    // บันทึกสถานะเริ่มต้น
+    autoSaveExamProgress();
 
     // เข้าควบคุม UI สลับบอดี้
     document.getElementById('app-shell').style.display = 'none';
@@ -3233,7 +3308,7 @@ function proceedToStartExam(exam) {
 
     // โหลดรายละเอียดหัวข้อบาร์
     document.getElementById('exam-title-display').innerText = exam.title;
-    document.getElementById('exam-desc-display').innerText = exam.description;
+    document.getElementById('exam-desc-display').innerText = exam.description || '';
     document.getElementById('exam-student-name').innerText = currentUser.name;
     document.getElementById('exam-total-questions').innerText = exam.questions.length;
     document.getElementById('exam-cheat-count').innerText = '0';
@@ -3409,6 +3484,7 @@ async function renderExamQuestion(index) {
 
 window.saveStudentAnswerMemory = function (questionId, value) {
   examSession.answers[questionId] = value;
+  autoSaveExamProgress();
 
   // ไฮไลต์กรอบในกรณีข้อช้อยส์เพื่อ UX พรีเมียม
   const options = document.querySelectorAll('.exam-choice-option');
@@ -3464,6 +3540,10 @@ function bindExamEvents() {
 }
 
 function confirmAndSubmitExam() {
+  // ปิดตัวตรวจจับทุจริตชั่วคราวก่อนแสดงหน้าต่าง confirm ของบราวเซอร์
+  // เพื่อป้องกันเหตุการณ์ window.blur ถูกมองว่าเป็นการสลับหน้าต่างหรือทุจริต
+  disableAntiCheatDetectors();
+
   // นับจำนวนข้อยังไม่ได้ทำ
   let unanswered = 0;
   activeExam.questions.forEach(q => {
@@ -3479,6 +3559,13 @@ function confirmAndSubmitExam() {
 
   if (confirm(msg)) {
     submitExamSheetDirectly('completed');
+  } else {
+    // หากผู้ใช้กดยกเลิกการส่ง ให้หน่วงเวลาแล้วเปิดตัวตรวจจับทุจริตใหม่อีกครั้ง
+    setTimeout(() => {
+      if (activeExam) {
+        enableAntiCheatDetectors();
+      }
+    }, 500);
   }
 }
 
@@ -3527,22 +3614,26 @@ async function submitExamSheetDirectly(status) {
     document.exitFullscreen().catch(() => { });
   }
 
+  const finishedExam = activeExam;
   cleanupExamSession();
 
   if (status === 'cheated') {
     // โชว์หน้าโดนทุจริตบอยคอต
     document.getElementById('anti-cheat-terminated-overlay').style.display = 'flex';
   } else {
-    if (activeExam.showResults !== false) {
-      alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nระบบทำการคำนวณคะแนนปรนัยของท่านอัตโนมัติแล้ว`);
+    if (finishedExam && finishedExam.showResults !== false) {
+      alert(`ส่งข้อสอบวิชา "${finishedExam.title}" เรียบร้อยแล้ว!\nระบบทำการคำนวณคะแนนปรนัยของท่านอัตโนมัติแล้ว`);
     } else {
-      alert(`ส่งข้อสอบวิชา "${activeExam.title}" เรียบร้อยแล้ว!\nคุณครูตั้งค่าไม่อนุญาตให้นักเรียนตรวจคะแนนหรือดูเฉลยหลังสอบ`);
+      alert(`ส่งข้อสอบวิชา "${finishedExam ? finishedExam.title : ''}" เรียบร้อยแล้ว!\nคุณครูตั้งค่าไม่อนุญาตให้นักเรียนตรวจคะแนนหรือดูเฉลยหลังสอบ`);
     }
     await switchView('student_exams');
   }
 }
 
 function cleanupExamSession() {
+  if (activeExam && currentUser) {
+    clearExamProgress(activeExam.id, currentUser.id);
+  }
   activeExam = null;
   document.getElementById('exam-taking-container').style.display = 'none';
   document.getElementById('app-shell').style.display = 'flex';
