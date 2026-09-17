@@ -1619,21 +1619,25 @@ body.in-exam header {
   /* 3. Mobile Exam Engine Layout                   */
   /* ============================================== */
   .exam-engine-layout {
-    flex-direction: column !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
-  }
-  .exam-main-panel {
-    flex: 1 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+    background-color: var(--bg-primary) !important;
+    z-index: 100 !important;
   }
   .exam-sidebar {
     width: 100% !important;
+    flex-shrink: 0 !important;
     border-right: none !important;
     border-bottom: 1px solid var(--border-glass) !important;
     padding: 8px 12px !important;
@@ -1641,7 +1645,7 @@ body.in-exam header {
     display: flex !important;
     flex-direction: column !important;
     gap: 6px !important;
-    position: sticky !important;
+    position: relative !important;
     top: 0 !important;
     z-index: 30 !important;
   }
@@ -1688,34 +1692,63 @@ body.in-exam header {
     display: none !important;
   }
 
-  /* Exam question content */
+  /* Exam main panel and question content */
+  .exam-main-panel {
+    flex: 1 1 0% !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+  }
   .exam-status-bar {
-    padding: 10px 14px !important;
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
     background: var(--bg-tertiary) !important;
     font-size: 12px !important;
+    border-bottom: 1px solid var(--border-glass) !important;
   }
   .exam-question-body {
-    flex: 1 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 14px 14px calc(85px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    padding: 16px 14px calc(90px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    display: block !important;
+  }
+  .question-content-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
   }
   .question-title {
-    font-size: 15px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
     line-height: 1.5 !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 16px !important;
+    color: var(--text-primary) !important;
+  }
+  .exam-choices-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
   }
   .exam-choice-option {
     padding: 13px 14px !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 0 !important;
     border-radius: var(--radius-md) !important;
     min-height: 48px !important;
     border: 2px solid var(--border-glass) !important;
     display: flex !important;
     align-items: center !important;
+    background: var(--bg-secondary) !important;
+    cursor: pointer !important;
     transition: all 0.15s ease !important;
   }
   .exam-choice-option.selected {
@@ -1723,7 +1756,15 @@ body.in-exam header {
     background: rgba(99, 102, 241, 0.12) !important;
   }
   .exam-choice-label {
-    font-size: 13.5px !important;
+    font-size: 14px !important;
+    color: var(--text-primary) !important;
+    line-height: 1.4 !important;
+  }
+  .subjective-textarea {
+    width: 100% !important;
+    min-height: 140px !important;
+    font-size: 16px !important;
+    padding: 14px !important;
   }
 
   /* Fixed Bottom Action Panel for Exam */
