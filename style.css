@@ -1301,6 +1301,9 @@ input:checked + .switch-slider:before {
 body.in-exam header {
   display: none !important;
 }
+body:not(.in-exam) #exam-taking-container {
+  display: none !important;
+}
 
 /* Print Styling Optimize */
 @media print {
@@ -1618,7 +1621,12 @@ body.in-exam header {
   /* ============================================== */
   /* 3. Mobile Exam Engine Layout                   */
   /* ============================================== */
-  .exam-engine-layout {
+  body:not(.in-exam) #exam-taking-container,
+  #exam-taking-container[style*="display: none"] {
+    display: none !important;
+  }
+  body.in-exam #exam-taking-container,
+  body.in-exam .exam-engine-layout {
     display: flex !important;
     flex-direction: column !important;
     position: fixed !important;
